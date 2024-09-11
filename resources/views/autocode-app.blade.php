@@ -1,6 +1,6 @@
-@section('other-scripts')
+@section('scripts')
 @vite(['resources/js/app.js'])
-@show
+@endsection
 
 @include('autocode::layouts.app')
 
