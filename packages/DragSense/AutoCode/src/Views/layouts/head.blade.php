@@ -2,9 +2,9 @@
 
 @php
     // Checking and assigning values with isset to avoid potential errors
-    $pageTitle = isset($pageSetting['setting']['title']) ? $pageSetting['setting']['title'] : (isset($setting['webTitle']) ? $setting['webTitle'] : 'Page');
+    $pageTitle = isset($pageSetting['title']) ? $pageSetting['title'] : (isset($setting['webTitle']) ? $setting['webTitle'] : 'Page');
     $tagLine = isset($setting['tagLine']) ? $setting['tagLine'] : null;
-    $pageDescription = isset($pageSetting['setting']['desc']) ? $pageSetting['setting']['desc'] : (isset($setting['desc']) ? $setting['desc'] : '');
+    $pageDescription = isset($pageSetting['desc']) ? $pageSetting['desc'] : (isset($setting['desc']) ? $setting['desc'] : '');
     $author = isset($setting['author']) ? $setting['author'] : '';
     $keywords = isset($setting['keywords']) ? $setting['keywords'] : '';
     $faviconSrc = isset($setting['images']['favicon']['src']) ? $setting['images']['favicon']['src'] : '/favicon.ico';
