@@ -1,4 +1,4 @@
-@section('scripts')
+@section('other-scripts')
 @vite(['resources/js/app.js'])
 @endsection
 
