@@ -2,15 +2,15 @@
 
 @php
     // Checking and assigning values with isset to avoid potential errors
-    $pageTitle = isset($pageSetting['title']) ? $pageSetting['title'] : (isset($setting['webTitle']) ? $setting['webTitle'] : 'Page');
-    $tagLine = isset($setting['tagLine']) ? $setting['tagLine'] : null;
-    $pageDescription = isset($pageSetting['desc']) ? $pageSetting['desc'] : (isset($setting['desc']) ? $setting['desc'] : '');
-    $author = isset($setting['author']) ? $setting['author'] : '';
-    $keywords = isset($setting['keywords']) ? $setting['keywords'] : '';
-    $faviconSrc = isset($setting['images']['favicon']['src']) ? $setting['images']['favicon']['src'] : '/favicon.ico';
-    $faviconType = isset($setting['images']['favicon']['mimetype']) ? $setting['images']['favicon']['mimetype'] : 'image/x-icon';
-    $language = isset($setting['lang']) ? $setting['lang'] : '';
-    $customScripts = isset($setting['scripts']['head']) ? $setting['scripts']['head'] : '';
+    $pageTitle = isset($pageSetting['title']) ? $pageSetting['title'] : (isset($settings['webTitle']) ? $settings['webTitle'] : 'Page');
+    $tagLine = isset($settings['tagLine']) ? $settings['tagLine'] : null;
+    $pageDescription = isset($pageSetting['desc']) ? $pageSetting['desc'] : (isset($settings['desc']) ? $settings['desc'] : '');
+    $author = isset($settings['author']) ? $settings['author'] : '';
+    $keywords = isset($settings['keywords']) ? $settings['keywords'] : '';
+    $faviconSrc = isset($settings['images']['favicon']['src']) ? $settings['images']['favicon']['src'] : '/favicon.ico';
+    $faviconType = isset($settings['images']['favicon']['mimetype']) ? $settings['images']['favicon']['mimetype'] : 'image/x-icon';
+    $language = isset($settings['lang']) ? $settings['lang'] : '';
+    $customScripts = isset($settings['scripts']['head']) ? $settings['scripts']['head'] : '';
     $pageHeadScripts = isset($pageScripts['head']) ? $pageScripts['head'] : '';
 @endphp
 
