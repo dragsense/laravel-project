@@ -57,7 +57,7 @@ class Document extends Model
 
         static::saving(function ($document) {
             // Generate a unique ID for new documents
-            if (!$document->exists && !$document->duplicated) {
+            if (!$document->exists) {
                 $document->_id = Str::uuid()->toString();
             }
 

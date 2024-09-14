@@ -3,6 +3,7 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Requests\CollectionRequests\StoreCollectionRequest;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\CollectionServices;
 use DragSense\AutoCode\Services\SettingServices;
@@ -92,10 +93,10 @@ class CollectionController extends Controller
     /**
      * Create a new collection.
      *
-     * @param Request $request The request containing collection data.
+     * @param StoreCollectionRequest $request The request containing collection data.
      * @return JsonResponse
      */
-    public function createCollection(Request $request): JsonResponse
+    public function createCollection(StoreCollectionRequest $request): JsonResponse
     {
         $collection = $this->collectionServices->createCollection($request->all());
         return response()->json(['collection' => $collection], 201);
@@ -105,10 +106,10 @@ class CollectionController extends Controller
      * Update an existing collection by its ID.
      *
      * @param string $id The ID of the collection.
-     * @param Request $request The request containing updated data.
+     * @param StoreCollectionRequest $request The request containing updated data.
      * @return JsonResponse
      */
-    public function updateCollection($id, Request $request): JsonResponse
+    public function updateCollection($id, StoreCollectionRequest $request): JsonResponse
     {
         $collection = $this->collectionServices->updateCollection($id, $request->all());
         return response()->json(['collection' => $collection]);

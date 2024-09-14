@@ -2,6 +2,7 @@
 
 namespace DragSense\AutoCode\Http\Controllers;
 
+use DragSense\AutoCode\Http\Requests\LayoutRequests\StoreLayoutRequest;
 use DragSense\AutoCode\Services\SettingServices;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\LayoutServices;
@@ -128,7 +129,7 @@ class LayoutController extends Controller
      * Update the elements of a specific layout by its ID.
      *
      * @param int $id The ID of the layout.
-     * @param Request $request The request instance containing element data.
+     * @param StoreLayoutRequest $request The request instance containing element data.
      * @return JsonResponse
      */
     public function updateElements($id, Request $request): JsonResponse
@@ -141,10 +142,10 @@ class LayoutController extends Controller
     /**
      * Create a new layout with the provided data.
      *
-     * @param Request $request The request instance containing layout data.
+     * @param StoreLayoutRequest $request The request instance containing layout data.
      * @return JsonResponse
      */
-    public function createLayout(Request $request)
+    public function createLayout(StoreLayoutRequest $request)
     {
         $withTemplate = $request->query('withTemplate');
 
@@ -155,11 +156,11 @@ class LayoutController extends Controller
     /**
      * Update an existing layout with new data.
      *
-     * @param Request $request The request instance containing updated layout data.
+     * @param StoreLayoutRequest $request The request instance containing updated layout data.
      * @param string $id The ID of the layout to be updated.
      * @return JsonResponse
      */
-    public function updateLayout(Request $request, $id)
+    public function updateLayout(StoreLayoutRequest $request, $id)
     {
         $layout = $this->layoutServices->updateLayout($id, $request->all());
         return response()->json(['layout' => $layout], Response::HTTP_OK);

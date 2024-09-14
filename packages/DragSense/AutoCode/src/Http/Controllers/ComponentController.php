@@ -3,6 +3,7 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Requests\ComponentRequests\StoreComponentRequest;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\ComponentServices;
 use DragSense\AutoCode\Services\SettingServices;
@@ -61,10 +62,10 @@ class ComponentController extends Controller
     /**
      * Create a new component with the given data.
      *
-     * @param Request $request The request containing component data.
+     * @param StoreComponentRequest $request The request containing component data.
      * @return JsonResponse
      */
-    public function createComponent(Request $request): JsonResponse
+    public function createComponent(StoreComponentRequest $request): JsonResponse
     {
         $component = $this->componentServices->createComponent($request->all());
         return response()->json(['component' => $component], 201);
@@ -100,10 +101,10 @@ class ComponentController extends Controller
      * Update an existing component by its ID with the given data.
      *
      * @param string $id The ID of the component.
-     * @param Request $request The request containing updated data.
+     * @param StoreComponentRequest $request The request containing updated data.
      * @return JsonResponse
      */
-    public function updateComponent($id, Request $request): JsonResponse
+    public function updateComponent($id, StoreComponentRequest $request): JsonResponse
     {
         $component = $this->componentServices->updateComponent($id, $request->all());
         return response()->json(['component' => $component]);

@@ -4,7 +4,8 @@ namespace DragSense\AutoCode\Http\Requests\SettingRequests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreSettingRequest extends FormRequest{
+class StoreSettingRequest extends FormRequest
+{
 
     public function rules()
     {

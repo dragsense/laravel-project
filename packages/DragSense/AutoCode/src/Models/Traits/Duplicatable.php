@@ -25,7 +25,7 @@ trait Duplicatable
 
             $uniqueId = Str::uuid()->toString();
             $duplicatedDoc = $doc->toArray();
-            unset($duplicatedDoc['id']); // Unset the ID for creating a new document
+            unset($duplicatedDoc['_id']); // Unset the ID for creating a new document
 
             // Update the slug of the duplicated document
             if (isset($duplicatedDoc['slug'])) {
@@ -42,6 +42,7 @@ trait Duplicatable
             if (isset($duplicatedDoc['setting']))  {
                 $duplicatedDoc['setting']['status'] = "DRAFT";
             }
+
             // Create the new duplicated document
             return self::create($duplicatedDoc);
         } catch (\Exception $e) {

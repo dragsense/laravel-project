@@ -77,7 +77,7 @@ class Collection extends Model
 
         static::saving(function ($collection) {
             // Generate a unique ID and setup new page for new collections if not duplicated
-            if (!$collection->exists && !$collection->duplicated) {
+            if (!$collection->exists) {
 
         
             $collection->_elements =  $collection->elements;

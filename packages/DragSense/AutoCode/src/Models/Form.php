@@ -71,7 +71,7 @@ class Form extends Model
 
         static::saving(function ($form) {
             // Generate a unique ID and identifiers for new forms if not duplicated
-            if (!$form->exists && !$form->duplicated) {
+            if (!$form->exists) {
 
 
             $form->_elements =  $form->elements;

@@ -2,6 +2,7 @@
 
 namespace DragSense\AutoCode\Http\Controllers;
 
+use DragSense\AutoCode\Http\Requests\MediaRequests\StoreMediaRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\MediaServices;
@@ -47,10 +48,10 @@ class MediaController extends Controller
      * Update existing media with new data.
      *
      * @param string $id The ID of the media to be updated.
-     * @param Request $request The request instance containing updated media data.
+     * @param StoreMediaRequest $request The request instance containing updated media data.
      * @return JsonResponse
      */
-    public function updateMedia($id, Request $request)
+    public function updateMedia($id, StoreMediaRequest $request)
     {
         // Call service to handle media update
         $media = $this->mediaServices->updateMedia($id, $request->all());

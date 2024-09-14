@@ -64,7 +64,7 @@ class Page extends Model
         parent::boot();
 
         static::saving(function ($page) {
-            if (!$page->exists && !$page->duplicated) {
+            if (!$page->exists) {
 
                 
                 $page->_elements =  $page->elements;

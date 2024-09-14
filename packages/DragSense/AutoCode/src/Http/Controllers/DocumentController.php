@@ -2,6 +2,7 @@
 
 namespace DragSense\AutoCode\Http\Controllers;
 
+use DragSense\AutoCode\Http\Requests\DocumentRequests\StoreDocumentRequest;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use DragSense\AutoCode\Services\DocumentServices;
@@ -41,11 +42,11 @@ class DocumentController extends Controller
     /**
      * Create a new document in a specified collection.
      *
-     * @param Request $request The request instance containing document data.
+     * @param StoreDocumentRequest $request The request instance containing document data.
      * @param string $collectionId The ID of the collection.
      * @return JsonResponse
      */
-    public function createDocument(Request $request, $collectionId): JsonResponse
+    public function createDocument(StoreDocumentRequest $request, $collectionId): JsonResponse
     {
         $isForm = $request->query('form') === 'true';
         $document = $this->documentServices->createDocument($collectionId, $isForm, $request->all());
@@ -72,12 +73,12 @@ class DocumentController extends Controller
     /**
      * Update an existing document within a specified collection.
      *
-     * @param Request $request The request instance containing updated document data.
+     * @param StoreDocumentRequest $request The request instance containing updated document data.
      * @param string $collectionId The ID of the collection.
      * @param string $id The ID of the document to be updated.
      * @return JsonResponse
      */
-    public function updateDocument(Request $request, $collectionId, $id): JsonResponse
+    public function updateDocument(StoreDocumentRequest $request, $collectionId, $id): JsonResponse
     {
         $isForm = $request->query('form') === 'true';
         $document = $this->documentServices->updateDocument($collectionId, $isForm, $id, $request->all());

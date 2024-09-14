@@ -10,6 +10,7 @@ use DragSense\AutoCode\Routes\V1\DocumentRoutes;
 use DragSense\AutoCode\Routes\V1\FormRoutes;
 use DragSense\AutoCode\Routes\V1\PageRoutes;
 use DragSense\AutoCode\Routes\V1\ThemeRoutes;
+use DragSense\AutoCode\Routes\V1\ThemesRoutes;
 use Illuminate\Support\Facades\Route;
 use DragSense\AutoCode\Routes\V1\SettingRoutes;
 use DragSense\AutoCode\Routes\V1\LayoutRoutes;
@@ -63,6 +64,10 @@ Route::middleware('autocode.api.auth')->prefix('v1')->group(function () {
 
     Route::prefix('backup')->group(function () {
         BackupRoutes::register();
+    });
+
+    Route::prefix('themes')->group(function () {
+        ThemesRoutes::register();
     });
 
 });

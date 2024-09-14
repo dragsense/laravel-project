@@ -63,7 +63,7 @@ class Layout extends Model{
         static::saving(function ($layout) {
         
     
-            if (!$layout->exists && !$layout->duplicated) {
+            if (!$layout->exists) {
                 
 
                 $layout->_elements =  $layout->elements;

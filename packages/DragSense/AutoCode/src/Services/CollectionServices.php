@@ -71,6 +71,9 @@ class CollectionServices
         }
 
         $collection->update($collectionData);
+
+        Log::info("collection",  $collection->toArray());
+
         return $collection;
     }
 

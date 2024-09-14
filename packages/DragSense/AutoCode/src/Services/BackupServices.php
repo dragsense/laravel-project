@@ -3,9 +3,21 @@
 namespace DragSense\AutoCode\Services;
 
 use DragSense\AutoCode\Http\Exceptions\ApiError;
+use DragSense\AutoCode\Models\Collection;
+use DragSense\AutoCode\Models\Form;
+use DragSense\AutoCode\Models\Schema\CollectionSchema;
+use DragSense\AutoCode\Models\Schema\ComponentSchema;
+use DragSense\AutoCode\Models\Schema\DocumentSchema;
+use DragSense\AutoCode\Models\Schema\FormSchema;
+use DragSense\AutoCode\Models\Schema\LayoutSchema;
+use DragSense\AutoCode\Models\Schema\MediaSchema;
+use DragSense\AutoCode\Models\Schema\PageSchema;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
+use Schema;
+use Str;
 use ZipArchive;
 use Illuminate\Support\Facades\Log;
 
@@ -44,14 +56,38 @@ class BackupServices
     private function createDirectoryAndCopyFiles($destinationDir, $sourceDir, $dirName)
     {
         $dirPath = $destinationDir . '/' . $dirName;
-        File::makeDirectory($dirPath, 0755, true);
 
-        if (!File::exists($sourceDir)) {
-            File::deleteDirectory($destinationDir);
-            throw new ApiError("{$dirName} folder not found.", 404);
+        // Create destination directory if it doesn't exist
+        if (!File::exists($dirPath)) {
+            File::makeDirectory($dirPath, 0755, true);
         }
 
-        File::copyDirectory($sourceDir, $dirPath);
+        // Check if source directory exists
+        if (!File::exists($sourceDir)) {
+            // Remove created directory if source does not exist
+            File::makeDirectory($sourceDir, 0755, true);
+        }
+
+        // If the directory name is 'data', apply filter logic
+        if ($dirName === 'data') {
+            $files = File::allFiles($sourceDir);
+
+            foreach ($files as $file) {
+                $filePath = (string) $file;
+
+                // Skip copying 'setting.json' for 'data' directory
+                if (strpos($filePath, 'setting.json') !== false) {
+                    continue; // Skip this file
+                }
+
+                // Copy the file to the destination directory
+                $relativePath = str_replace($sourceDir, '', $filePath);
+                File::copy($filePath, $dirPath . '/' . $relativePath);
+            }
+        } else {
+            // For other directories, copy everything without filtering
+            File::copyDirectory($sourceDir, $dirPath);
+        }
     }
 
     /**
@@ -61,27 +97,86 @@ class BackupServices
      * @return void
      * @throws ApiError If the database backup fails.
      */
-    private function takeSnapshot($destinationDir)
+    private function takeSnapshot($destinationDir, $isCollectionsEntries, $isFormsEntries)
     {
         try {
-            $dumpFile = $destinationDir . '/' . env('DB_DATABASE') . '.sql';
-            $command = sprintf(
-                'mysqldump -u"%s" -p"%s" %s > %s 2>&1',
-                env('DB_USERNAME'),
-                env('DB_PASSWORD'),
-                env('DB_DATABASE'),
-                $dumpFile
-            );
-            $output = shell_exec($command);
-            if ($output) {
-                File::deleteDirectory($destinationDir);
-                throw new ApiError('Database backup failed: ' . $output, 500);
+            $baseTables = [
+                'ac_layouts' => 'layout',
+                'ac_pages' => 'page',
+                'ac_collections' => 'collection',
+                'ac_forms' => 'form',
+                'ac_components' => 'component',
+                'ac_media' => 'media',
+            ];
+
+            // Initialize tables array with base tables
+
+
+            // Add dynamic collection entries if flag is set
+            if ($isCollectionsEntries && Schema::hasTable('ac_collections')) {
+                
+                $collectionSlugs = Collection::pluck('slug')->toArray();
+                foreach ($collectionSlugs as $slug) {
+
+                    $pluralSlug = Str::plural(strtolower($slug));
+
+                    $tableName = 'ac_' . $pluralSlug;
+                    $baseTables[$tableName] = 'document';
+                }
+            
             }
+
+            // Add dynamic form entries if flag is set
+            if ($isFormsEntries && Schema::hasTable('ac_forms')) {
+                $formSlugs = Form::pluck('slug')->toArray();
+               
+                foreach ($formSlugs as $slug) {
+
+                    $pluralSlug = Str::plural(strtolower($slug));
+
+                    $tableName = 'ac_' . $pluralSlug;
+                    $baseTables[$tableName] = 'document'; // Mapping form slugs to 'documents'
+                }
+            }
+
+            // Initialize data array
+            $exportData = [];
+            \Log::info('Processing table: ', $baseTables);
+
+            // Fetch data from each table
+            foreach ($baseTables as $table => $schemaName) {
+
+                \Log::info('Processing table: ' . $table);
+                // Fetch data
+                if (Schema::hasTable($table)) {
+                    $data = DB::table($table)->get(); // Fetch data from the table
+                    $exportData[$table] = [
+                        'schema' => $schemaName,
+                        'data' => $data->toArray()
+                    ];
+                }
+            }
+
+            // Encode the data to JSON format
+            $jsonData = json_encode($exportData, JSON_PRETTY_PRINT);
+
+            // Define file name and path
+            $fileName = 'database' . '.json';
+            $filePath = $destinationDir . '/' . $fileName;
+
+            // Save the JSON to a file
+            file_put_contents($filePath, $jsonData);
+
+
         } catch (\Exception $e) {
-            File::deleteDirectory($destinationDir);
+            // Clean up any created files or directories in case of an error
+            if (File::exists($destinationDir)) {
+                File::deleteDirectory($destinationDir);
+            }
             throw new ApiError($e->getMessage() ?: 'Database backup failed.', 500);
         }
     }
+
 
     /**
      * Creates a ZIP archive of the backup directory and cleans up the directory.
@@ -146,24 +241,78 @@ class BackupServices
     private function restoreSnapshot($destinationDir)
     {
         try {
-            $dumpFile = $destinationDir . '/' . env('DB_DATABASE') . '.sql';
+            $fileName = 'database' . '.json';
+            $filePath = $destinationDir . '/' . $fileName;
 
-            $command = sprintf(
-                'mysql -u"%s" -p"%s" %s < %s 2>&1',
-                env('DB_USERNAME'),
-                env('DB_PASSWORD'),
-                env('DB_DATABASE'),
-                $dumpFile
-            );
-            $output = shell_exec($command);
-            if ($output) {
-                throw new ApiError('Database restore failed: ' . $output, 500);
+            // Log the file path for debugging
+            \Log::info('JSON file path: ' . $filePath);
+
+            // Check if JSON file exists
+            if (!file_exists($filePath)) {
+                throw new \Exception('Database restore failed: JSON file not found at ' . $filePath);
             }
+
+            // Load the JSON file content
+            $jsonData = json_decode(file_get_contents($filePath), true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new \Exception('Database restore failed: Invalid JSON file');
+            }
+
+            foreach ($jsonData as $table => $content) {
+                // Drop the table if it exists (optional)
+                if (!Schema::hasTable($table)) {
+
+                    if ($content["schema"] == 'page')
+                        PageSchema::up($table);
+                    else
+                        if ($content["schema"] == 'collection')
+                            CollectionSchema::up($table);
+                        else
+                            if ($content["schema"] == 'layout')
+                                LayoutSchema::up($table);
+                            else
+                                if ($content["schema"] == 'component')
+                                    ComponentSchema::up($table);
+                                else
+                                    if ($content["schema"] == 'form')
+                                        FormSchema::up($table);
+                                    else
+                                        if ($content["schema"] == 'media')
+                                            MediaSchema::up($table);
+                                        else
+                                            if ($content["schema"] == 'document')
+                                                DocumentSchema::up($table);
+                                            else
+                                                continue;
+
+                }
+                // Insert or update rows
+                foreach ($content['data'] as $row) {
+                    $rowData = (array) $row;
+
+                    // Check if the row already exists (Assuming 'id' is the unique field)
+                    $existingRow = DB::table($table)->where('_id', $rowData['_id'])->first();
+
+                    if ($existingRow) {
+                        // Update the row if it exists
+                        DB::table($table)->where('_id', $rowData['_id'])->update($rowData);
+                    } else {
+                        // Insert the row if it doesn't exist
+                        DB::table($table)->insert($rowData);
+                    }
+                }
+            }
+
         } catch (\Exception $e) {
-            File::deleteDirectory($destinationDir);
+            // Clean up any created files or directories in case of an error
+            if (File::exists($destinationDir)) {
+                File::deleteDirectory($destinationDir);
+            }
             throw new ApiError($e->getMessage() ?: 'Database restore failed.', 500);
         }
     }
+
+
 
     /**
      * Installs a backup by extracting it, restoring the database, and copying files.
@@ -172,12 +321,23 @@ class BackupServices
      * @return array Status of the operation.
      * @throws ApiError If the backup does not exist or restoration fails.
      */
-    public function installBackup($id)
+    public function installBackup($id, $themePath)
     {
-        $destinationDir = $this->backupDir . '/' . $id;
+        $destinationDir = '';
+
+        if ($themePath) {
+            $destinationDir = $themePath;
+
+
+        } else {
+            $destinationDir = $this->backupDir . '/' . $id;
+
+            // Check if backup ZIP file exists
+
+        }
 
         if (!File::exists($destinationDir . '.zip')) {
-            throw new ApiError('Backup not found.', 404);
+            throw new \Exception('Backup folder not found.', 409); // HTTP 409 Conflict
         }
 
         // Extract the ZIP file
@@ -221,7 +381,7 @@ class BackupServices
      * @return array Status of the operation.
      * @throws ApiError If the backup already exists.
      */
-    public function createBackup($id)
+    public function createBackup($id, $isCollectionsEntries, $isFormsEntries)
     {
         $destinationDir = $this->backupDir . '/' . $id;
 
@@ -231,19 +391,29 @@ class BackupServices
 
         File::makeDirectory($destinationDir, 0755, true);
 
+        $this->create($destinationDir, $isCollectionsEntries, $isFormsEntries);
+
+        return ['status' => true];
+    }
+
+    /**
+     * Creates a backup by copying files and taking a database snapshot.
+     *
+     * @param string $destinationDir The backup destinationDir.
+     * @throws ApiError If the backup already exists.
+     */
+    public function create($destinationDir, $isCollectionsEntries = fase, $isFormsEntries = false)
+    {
         // Copy data directory
         $this->createDirectoryAndCopyFiles($destinationDir, $this->dataDir, 'data');
 
         // Copy static directory
         $this->createDirectoryAndCopyFiles($destinationDir, $this->publicDir . '/static', 'static');
-
         // Take a snapshot of the database
-        $this->takeSnapshot($destinationDir);
-
+        $this->takeSnapshot($destinationDir, $isCollectionsEntries, $isFormsEntries);
         // Create a ZIP archive and clean up the directory
         $this->createZipAndCleanUp($destinationDir);
 
-        return ['status' => true];
     }
 
     /**
@@ -253,16 +423,17 @@ class BackupServices
      * @return array Status of the operation.
      * @throws ApiError If the backup does not exist.
      */
-    public function updateBackup($id)
+    public function updateBackup($id, $isCollectionsEntries, $isFormsEntries)
     {
         $destinationDir = $this->backupDir . '/' . $id;
 
         if (!File::exists($destinationDir . '.zip')) {
             throw new ApiError('Backup not found.', 404);
         }
-
+        Log::info($destinationDir);
+        $this->create($destinationDir, $isCollectionsEntries, $isFormsEntries);
         // Re-create the backup
-        return $this->createBackup($id);
+        return ['status' => true];
     }
 
     /**

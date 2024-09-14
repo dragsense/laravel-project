@@ -3,6 +3,7 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Exceptions\ApiError;
+use DragSense\AutoCode\Http\Requests\BackupRequests\StoreBackupRequest;
 use DragSense\AutoCode\Services\BackupServices;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -65,11 +66,11 @@ class BackupController extends Controller
     /**
      * Create a new backup.
      *
-     * @param Request $request The request containing backup data.
+     * @param StoreBackupRequest $request The request containing backup data.
      * @return JsonResponse
      * @throws ApiError
      */
-    public function createBackup(Request $request): JsonResponse
+    public function createBackup(StoreBackupRequest $request): JsonResponse
     {
         $requestData = $request->all();
 
@@ -77,11 +78,14 @@ class BackupController extends Controller
         if (!isset($requestData['_id'])) {
             throw new ApiError('Backup ID is required.', 400);
         }
-
+        
         $id = $requestData['_id'];
+        $isCollectionsEntries = isset($requestData['isCollectionsEntries']) ? $requestData['isFormsEntries'] : false;
+        $isFormsEntries = isset($requestData['isFormsEntries']) ? $requestData['isFormsEntries'] : false;
 
+      
         // Create the backup and return the response
-        $backup = $this->backupServices->createBackup($id);
+        $backup = $this->backupServices->createBackup($id, $isCollectionsEntries, $isFormsEntries);
         return response()->json(['backup' => $backup], 201);
     }
 
@@ -94,8 +98,14 @@ class BackupController extends Controller
      */
     public function updateBackup(Request $request, $id): JsonResponse
     {
+
+        $requestData = $request->all();
+
+        $isCollectionsEntries = isset($requestData['isCollectionsEntries']) ? $requestData['isFormsEntries'] : false;
+        $isFormsEntries = isset($requestData['isFormsEntries']) ? $requestData['isFormsEntries'] : false;
+        \Log::info($isCollectionsEntries);
         // Update the backup and return the response
-        $backup = $this->backupServices->updateBackup($id);
+        $backup = $this->backupServices->updateBackup($id, $isCollectionsEntries, $isFormsEntries);
         return response()->json(['backup' => $backup]);
     }
 
@@ -121,7 +131,7 @@ class BackupController extends Controller
     public function installBackup($id): JsonResponse
     {
         // Install the backup and return the response
-        $backup = $this->backupServices->installBackup($id);
+        $backup = $this->backupServices->installBackup($id, null);
         return response()->json(['backup' => $backup]);
     }
 }

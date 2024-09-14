@@ -2,6 +2,7 @@
 
 namespace DragSense\AutoCode\Http\Controllers;
 
+use DragSense\AutoCode\Http\Requests\FormRequests\StoreFormRequest;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\FormServices;
 use DragSense\AutoCode\Services\SettingServices;
@@ -34,18 +35,7 @@ class FormController extends Controller
         return response()->json(['form' => $form, 'host' => $fullhost]);
     }
 
-    /**
-     * Retrieve the data associated with a specific form by its ID.
-     *
-     * @param string $id The ID of the form.
-     * @return JsonResponse
-     */
-    public function getFormData($id): JsonResponse
-    {
-        $result = $this->formServices->getFormData($id);
-        return response()->json($result);
-    }
-
+   
     /**
      * Stream the elements of a specific form as a chunked response.
      *
@@ -101,10 +91,10 @@ class FormController extends Controller
     /**
      * Create a new form with the provided data.
      *
-     * @param Request $request The request instance containing form data.
+     * @param StoreFormRequest $request The request instance containing form data.
      * @return JsonResponse
      */
-    public function createForm(Request $request): JsonResponse
+    public function createForm(StoreFormRequest $request): JsonResponse
     {
         $form = $this->formServices->createForm($request->all());
         return response()->json(['form' => $form], 201);
@@ -114,10 +104,10 @@ class FormController extends Controller
      * Update an existing form with new data.
      *
      * @param string $id The ID of the form to be updated.
-     * @param Request $request The request instance containing updated form data.
+     * @param StoreFormRequest $request The request instance containing updated form data.
      * @return JsonResponse
      */
-    public function updateForm($id, Request $request): JsonResponse
+    public function updateForm($id, StoreFormRequest $request): JsonResponse
     {
         $form = $this->formServices->updateForm($id, $request->all());
         return response()->json(['form' => $form]);

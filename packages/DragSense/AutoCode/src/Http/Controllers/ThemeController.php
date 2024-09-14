@@ -3,6 +3,13 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreAnimationRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreCodeRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreColorRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreFontRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreIconRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreStyleRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreVariableRequest;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\ThemeServices;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,10 +34,10 @@ class ThemeController extends Controller
     /**
      * Create a new color.
      *
-     * @param Request $request The request containing color data.
+     * @param StoreColorRequest $request The request containing color data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createColor(Request $request)
+    public function createColor(StoreColorRequest $request)
     {
         $color = $this->themeServices->createColor($request->all());
         return response()->json(['color' => $color], Response::HTTP_CREATED);
@@ -39,11 +46,11 @@ class ThemeController extends Controller
     /**
      * Update an existing color by its unique ID.
      *
-     * @param Request $request The request containing the updated color data.
+     * @param StoreColorRequest $request The request containing the updated color data.
      * @param int $uid The unique ID of the color to update.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateColor(Request $request, $uid)
+    public function updateColor(StoreColorRequest $request, $uid)
     {
         $color = $this->themeServices->updateColor($uid, $request->all());
         return response()->json(['color' => $color], Response::HTTP_OK);
@@ -81,10 +88,10 @@ class ThemeController extends Controller
     /**
      * Create a new font.
      *
-     * @param Request $request The request containing font data.
+     * @param StoreFontRequest $request The request containing font data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createFont(Request $request)
+    public function createFont(StoreFontRequest $request)
     {
         $font = $this->themeServices->createFont($request->all());
         return response()->json(['font' => $font], Response::HTTP_CREATED);
@@ -93,11 +100,11 @@ class ThemeController extends Controller
     /**
      * Update an existing font by its unique ID.
      *
-     * @param Request $request The request containing the updated font data.
+     * @param StoreFontRequest $request The request containing the updated font data.
      * @param int $uid The unique ID of the font to update.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateFont(Request $request, $uid)
+    public function updateFont(StoreFontRequest $request, $uid)
     {
         $font = $this->themeServices->updateFont($uid, $request->all());
         return response()->json(['font' => $font], Response::HTTP_OK);
@@ -135,10 +142,10 @@ class ThemeController extends Controller
     /**
      * Create a new icon.
      *
-     * @param Request $request The request containing icon data.
+     * @param StoreIconRequest $request The request containing icon data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createIcon(Request $request)
+    public function createIcon(StoreIconRequest $request)
     {
         $icon = $this->themeServices->createIcon($request->all());
         return response()->json(['icon' => $icon], Response::HTTP_CREATED);
@@ -147,11 +154,11 @@ class ThemeController extends Controller
     /**
      * Update an existing icon by its unique ID.
      *
-     * @param Request $request The request containing the updated icon data.
+     * @param StoreIconRequest $request The request containing the updated icon data.
      * @param int $uid The unique ID of the icon to update.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateIcon(Request $request, $uid)
+    public function updateIcon(StoreIconRequest $request, $uid)
     {
         $icon = $this->themeServices->updateIcon($uid, $request->all());
         return response()->json(['icon' => $icon], Response::HTTP_OK);
@@ -189,10 +196,10 @@ class ThemeController extends Controller
     /**
      * Create a new variable.
      *
-     * @param Request $request The request containing variable data.
+     * @param StoreVariableRequest $request The request containing variable data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function createVariable(Request $request)
+    public function createVariable(StoreVariableRequest $request)
     {
         $variable = $this->themeServices->createVariable($request->all());
         return response()->json(['variable' => $variable], Response::HTTP_CREATED);
@@ -201,11 +208,11 @@ class ThemeController extends Controller
     /**
      * Update an existing variable by its unique ID.
      *
-     * @param Request $request The request containing the updated variable data.
+     * @param StoreVariableRequest $request The request containing the updated variable data.
      * @param int $uid The unique ID of the variable to update.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function updateVariable(Request $request, $uid)
+    public function updateVariable(StoreVariableRequest $request, $uid)
     {
         $variable = $this->themeServices->updateVariable($uid, $request->all());
         return response()->json(['variable' => $variable], Response::HTTP_OK);
@@ -243,10 +250,10 @@ class ThemeController extends Controller
     /**
      * Save style information.
      *
-     * @param Request $request The request containing style data.
+     * @param StoreStyleRequest $request The request containing style data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function saveStyle(Request $request)
+    public function saveStyle(StoreStyleRequest $request)
     {
         $result = $this->themeServices->saveStyle($request->all());
         return response()->json($result, Response::HTTP_CREATED);
@@ -294,10 +301,10 @@ class ThemeController extends Controller
     /**
      * Save animation information.
      *
-     * @param Request $request The request containing animation data.
+     * @param StoreAnimationRequest $request The request containing animation data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function saveAnimations(Request $request)
+    public function saveAnimations(StoreAnimationRequest $request)
     {
         $result = $this->themeServices->saveAnimations($request->all());
         return response()->json($result, Response::HTTP_CREATED);
@@ -319,10 +326,10 @@ class ThemeController extends Controller
     /**
      * Save CSS information.
      *
-     * @param Request $request The request containing CSS data.
+     * @param StoreCodeRequest $request The request containing CSS data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function saveCss(Request $request)
+    public function saveCss(StoreCodeRequest $request)
     {
         $result = $this->themeServices->saveCss($request->all());
         return response()->json($result, Response::HTTP_CREATED);
@@ -355,10 +362,10 @@ class ThemeController extends Controller
     /**
      * Save JavaScript information.
      *
-     * @param Request $request The request containing JavaScript data.
+     * @param StoreCodeRequest $request The request containing JavaScript data.
      * @return \Illuminate\Http\JsonResponse
      */
-    public function saveJs(Request $request)
+    public function saveJs(StoreCodeRequest $request)
     {
         $result = $this->themeServices->saveJs($request->all());
         return response()->json($result, Response::HTTP_CREATED);

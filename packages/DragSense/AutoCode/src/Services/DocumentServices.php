@@ -7,6 +7,7 @@ use DragSense\AutoCode\Models\Form;
 use DragSense\AutoCode\Models\Media;
 use DragSense\AutoCode\Models\Document;
 use DragSense\AutoCode\Http\Exceptions\ApiError;
+use DragSense\AutoCode\Models\Schema\DocumentSchema;
 use DragSense\AutoCode\Utils\Utils;
 use Exception;
 use Illuminate\Database\Schema\Blueprint;
@@ -41,8 +42,10 @@ class DocumentServices
             // Update states with the specific content type
             if (isset($documentBody['states'])) {
                 Utils::updateContentWithType($documentBody['states'], 'content');
+                $documentBody['_states'] = $documentBody['states'];
             }
 
+            $documentBody['updater'] = [];
             // Prepare the document data
             $documentBody['coll'] = [
                 '_id' => $collection->_id,
@@ -105,6 +108,13 @@ class DocumentServices
         if (isset($documentData['setting']['content'])) {
             $documentData['setting']['content'] = html_entity_decode($documentData['setting']['content']);
         }
+
+        if (isset($documentBody['states'])) {
+            Utils::updateContentWithType($documentBody['states'], 'content');
+            $documentBody['_states'] = $documentBody['states'];
+        }
+
+     
 
         $document->update($documentData);
         return $document;
@@ -447,30 +457,7 @@ class DocumentServices
         // Check if the table already exists
         if (!Schema::hasTable($tableName)) {
             // Create the table
-            Schema::create($tableName, function (Blueprint $table) {
-                $table->string('_id')->primary();
-                $table->string('name');
-                $table->string('slug')->unique();
-                $table->string('url')->nullable();
-                $table->json('coll')->default(json_encode([]));
-                $table->json('relationships')->default(json_encode([]));
-                $table->json('states')->default(json_encode([]));
-                $table->json('_states')->default(json_encode([]));
-                $table->boolean('published')->default(true);
-                $table->json('setting')->default(json_encode([
-                    'title' => '',
-                    'desc' => '',
-                    'image' => null,
-                    'content' => '',
-                    'excerpt' => '',
-                    'status' => 'DRAFT',
-                ]));
-                $table->json('updater')->default(json_encode([]));
-                $table->boolean('duplicated')->default(false);
-                $table->json('creator')->default(json_encode([]));
-                $table->timestamps();
-            });
-
+            DocumentSchema::up($tableName);
             return true;
         }
 

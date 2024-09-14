@@ -1,0 +1,384 @@
+<?php 
+
+namespace DragSense\AutoCode\Http\Controllers;
+
+use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreAnimationRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreCodeRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreColorRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreFontRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreIconRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreStyleRequest;
+use DragSense\AutoCode\Http\Requests\ThemeRequests\StoreVariableRequest;
+use Illuminate\Http\Request;
+use DragSense\AutoCode\Services\ThemeServices;
+use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Arr;
+
+class ThemeController extends Controller
+{
+    protected $themeServices;
+
+    /**
+     * Constructor to initialize ThemeServices.
+     *
+     * @param ThemeServices $themeServices
+     */
+    public function __construct(ThemeServices $themeServices)
+    {
+        $this->themeServices = $themeServices;
+    }
+
+    // Color-related methods
+
+    /**
+     * Create a new color.
+     *
+     * @param StoreColorRequest $request The request containing color data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createColor(StoreColorRequest $request)
+    {
+        $color = $this->themeServices->createColor($request->all());
+        return response()->json(['color' => $color], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Update an existing color by its unique ID.
+     *
+     * @param StoreColorRequest $request The request containing the updated color data.
+     * @param int $uid The unique ID of the color to update.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateColor(StoreColorRequest $request, $uid)
+    {
+        $color = $this->themeServices->updateColor($uid, $request->all());
+        return response()->json(['color' => $color], Response::HTTP_OK);
+    }
+
+    /**
+     * Delete a color by its unique ID.
+     *
+     * @param int $uid The unique ID of the color to delete.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteColor($uid)
+    {
+        $deletedUid = $this->themeServices->deleteColor($uid);
+        return response()->json(['_uid' => $deletedUid], Response::HTTP_OK);
+    }
+
+    /**
+     * Get a list of colors with optional filters and pagination.
+     *
+     * @param Request $request The request containing filter and pagination options.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getColors(Request $request)
+    {
+        $filter = Arr::only($request->query(), ['name']);
+        $options = Arr::only($request->query(), ['sortBy', 'limit', 'page']);
+
+        $colors = $this->themeServices->getColors($filter, $options);
+        return response()->json(['colors' => $colors], Response::HTTP_OK);
+    }
+
+    // Font-related methods
+
+    /**
+     * Create a new font.
+     *
+     * @param StoreFontRequest $request The request containing font data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createFont(StoreFontRequest $request)
+    {
+        $font = $this->themeServices->createFont($request->all());
+        return response()->json(['font' => $font], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Update an existing font by its unique ID.
+     *
+     * @param StoreFontRequest $request The request containing the updated font data.
+     * @param int $uid The unique ID of the font to update.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateFont(StoreFontRequest $request, $uid)
+    {
+        $font = $this->themeServices->updateFont($uid, $request->all());
+        return response()->json(['font' => $font], Response::HTTP_OK);
+    }
+
+    /**
+     * Delete a font by its unique ID.
+     *
+     * @param int $uid The unique ID of the font to delete.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteFont($uid)
+    {
+        $deletedUid = $this->themeServices->deleteFont($uid);
+        return response()->json(['_uid' => $deletedUid], Response::HTTP_OK);
+    }
+
+    /**
+     * Get a list of fonts with optional filters and pagination.
+     *
+     * @param Request $request The request containing filter and pagination options.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getFonts(Request $request)
+    {
+        $filter = Arr::only($request->query(), ['name']);
+        $options = Arr::only($request->query(), ['sortBy', 'limit', 'page']);
+
+        $fonts = $this->themeServices->getFonts($filter, $options);
+        return response()->json(['fonts' => $fonts], Response::HTTP_OK);
+    }
+
+    // Icon-related methods
+
+    /**
+     * Create a new icon.
+     *
+     * @param StoreIconRequest $request The request containing icon data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createIcon(StoreIconRequest $request)
+    {
+        $icon = $this->themeServices->createIcon($request->all());
+        return response()->json(['icon' => $icon], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Update an existing icon by its unique ID.
+     *
+     * @param StoreIconRequest $request The request containing the updated icon data.
+     * @param int $uid The unique ID of the icon to update.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateIcon(StoreIconRequest $request, $uid)
+    {
+        $icon = $this->themeServices->updateIcon($uid, $request->all());
+        return response()->json(['icon' => $icon], Response::HTTP_OK);
+    }
+
+    /**
+     * Delete an icon by its unique ID.
+     *
+     * @param int $uid The unique ID of the icon to delete.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteIcon($uid)
+    {
+        $deletedUid = $this->themeServices->deleteIcon($uid);
+        return response()->json(['_uid' => $deletedUid], Response::HTTP_OK);
+    }
+
+    /**
+     * Get a list of icons with optional filters and pagination.
+     *
+     * @param Request $request The request containing filter and pagination options.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getIcons(Request $request)
+    {
+        $filter = Arr::only($request->query(), ['name']);
+        $options = Arr::only($request->query(), ['sortBy', 'limit', 'page']);
+
+        $icons = $this->themeServices->getIcons($filter, $options);
+        return response()->json(['icons' => $icons], Response::HTTP_OK);
+    }
+
+    // Variable-related methods
+
+    /**
+     * Create a new variable.
+     *
+     * @param StoreVariableRequest $request The request containing variable data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function createVariable(StoreVariableRequest $request)
+    {
+        $variable = $this->themeServices->createVariable($request->all());
+        return response()->json(['variable' => $variable], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Update an existing variable by its unique ID.
+     *
+     * @param StoreVariableRequest $request The request containing the updated variable data.
+     * @param int $uid The unique ID of the variable to update.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateVariable(StoreVariableRequest $request, $uid)
+    {
+        $variable = $this->themeServices->updateVariable($uid, $request->all());
+        return response()->json(['variable' => $variable], Response::HTTP_OK);
+    }
+
+    /**
+     * Delete a variable by its unique ID.
+     *
+     * @param int $uid The unique ID of the variable to delete.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function deleteVariable($uid)
+    {
+        $deletedUid = $this->themeServices->deleteVariable($uid);
+        return response()->json(['_uid' => $deletedUid], Response::HTTP_OK);
+    }
+
+    /**
+     * Get a list of variables with optional filters and pagination.
+     *
+     * @param Request $request The request containing filter and pagination options.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getVariables(Request $request)
+    {
+        $filter = Arr::only($request->query(), ['name']);
+        $options = Arr::only($request->query(), ['sortBy', 'limit', 'page']);
+
+        $variables = $this->themeServices->getVariables($filter, $options);
+        return response()->json(['variables' => $variables], Response::HTTP_OK);
+    }
+
+    // Style-related methods
+
+    /**
+     * Save style information.
+     *
+     * @param StoreStyleRequest $request The request containing style data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveStyle(StoreStyleRequest $request)
+    {
+        $result = $this->themeServices->saveStyle($request->all());
+        return response()->json($result, Response::HTTP_CREATED);
+    }
+
+     /**
+     * Get style information by its ID.
+     *
+     * @param int $id The unique ID of the style.
+     * @return \Illuminate\Http\JsonResponse 
+     */
+    public function getStyle($id)
+    {
+          $styles = $this->themeServices->getStyle();
+          return response()->streamJson(['_id' => $id, 'elements' => $styles]);
+    }
+
+    // Animation-related methods
+
+    /**
+     * Get animation data by its ID.
+     *
+     * @param int $id The unique ID of the animation.
+    * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAnimations($id)
+    {
+
+        $styles = $this->themeServices->getAnimations();
+          return response()->streamJson(['_id' => $id, 'elements' => $styles]);
+    
+    }
+
+    /**
+     * Get a list of animation names.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAnimationsNames()
+    {
+        $names = $this->themeServices->getAnimationsNames();
+        return response()->json(['names' => $names], Response::HTTP_OK);
+    }
+
+    /**
+     * Save animation information.
+     *
+     * @param StoreAnimationRequest $request The request containing animation data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveAnimations(StoreAnimationRequest $request)
+    {
+        $result = $this->themeServices->saveAnimations($request->all());
+        return response()->json($result, Response::HTTP_CREATED);
+    }
+
+    /**
+     * Get CSS for animations.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getAnimationsCss()
+    {
+        $result = $this->themeServices->getAnimationsCss();
+        return response()->json($result, Response::HTTP_OK);
+    }
+
+    // CSS-related methods
+
+    /**
+     * Save CSS information.
+     *
+     * @param StoreCodeRequest $request The request containing CSS data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveCss(StoreCodeRequest $request)
+    {
+        $result = $this->themeServices->saveCss($request->all());
+        return response()->json($result, Response::HTTP_CREATED);
+    }
+
+    /**
+     * Get CSS information.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getCss()
+    {
+        $result = $this->themeServices->getCss();
+        return response()->json($result, Response::HTTP_OK);
+    }
+
+    /**
+     * Get custom CSS information.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getCustomCss()
+    {
+        $result = $this->themeServices->getCustomCss();
+        return response()->json($result, Response::HTTP_OK);
+    }
+
+    // JavaScript-related methods
+
+    /**
+     * Save JavaScript information.
+     *
+     * @param StoreCodeRequest $request The request containing JavaScript data.
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function saveJs(StoreCodeRequest $request)
+    {
+        $result = $this->themeServices->saveJs($request->all());
+        return response()->json($result, Response::HTTP_CREATED);
+    }
+
+    /**
+     * Get JavaScript information.
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getJs()
+    {
+        $result = $this->themeServices->getJs();
+        return response()->json($result, Response::HTTP_OK);
+    }
+}

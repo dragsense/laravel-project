@@ -73,7 +73,7 @@ class Component extends Model
 
         static::saving(function ($component) {
             // Generate a unique ID for new components if not duplicated
-            if (!$component->exists && !$component->duplicated) {
+            if (!$component->exists) {
 
                 
     

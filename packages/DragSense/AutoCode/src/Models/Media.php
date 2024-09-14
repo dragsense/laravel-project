@@ -42,7 +42,7 @@ class Media extends Model
         parent::boot();
 
         static::saving(function ($media) {
-            if (!$media->exists && !$media->duplicated) {
+            if (!$media->exists) {
                 $media->_id = Str::uuid()->toString();
             }
         });

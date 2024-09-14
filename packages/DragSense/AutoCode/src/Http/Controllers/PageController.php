@@ -3,6 +3,7 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Requests\PageRequests\StorePageRequest;
 use Illuminate\Http\Request;
 use DragSense\AutoCode\Services\PageServices;
 use DragSense\AutoCode\Services\SettingServices;
@@ -93,10 +94,10 @@ class PageController extends Controller
     /**
      * Create a new page with the provided data.
      *
-     * @param Request $request The request instance containing page data.
+     * @param StorePageRequest $request The request instance containing page data.
      * @return JsonResponse
      */
-    public function createPage(Request $request): JsonResponse
+    public function createPage(StorePageRequest $request): JsonResponse
     {
         $page = $this->pageServices->createPage($request->all());
         return response()->json(['page' => $page], 201);
@@ -106,10 +107,10 @@ class PageController extends Controller
      * Update an existing page by its ID with the provided data.
      *
      * @param int $id The ID of the page to update.
-     * @param Request $request The request instance containing updated page data.
+     * @param StorePageRequest $request The request instance containing updated page data.
      * @return JsonResponse
      */
-    public function updatePage($id, Request $request): JsonResponse
+    public function updatePage($id, StorePageRequest $request): JsonResponse
     {
         $page = $this->pageServices->updatePage($id, $request->all());
         return response()->json(['page' => $page]);
