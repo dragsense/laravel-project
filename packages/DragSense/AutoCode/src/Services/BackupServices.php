@@ -114,7 +114,7 @@ class BackupServices
 
             // Add dynamic collection entries if flag is set
             if ($isCollectionsEntries && Schema::hasTable('ac_collections')) {
-                
+
                 $collectionSlugs = Collection::pluck('slug')->toArray();
                 foreach ($collectionSlugs as $slug) {
 
@@ -123,13 +123,13 @@ class BackupServices
                     $tableName = 'ac_' . $pluralSlug;
                     $baseTables[$tableName] = 'document';
                 }
-            
+
             }
 
             // Add dynamic form entries if flag is set
             if ($isFormsEntries && Schema::hasTable('ac_forms')) {
                 $formSlugs = Form::pluck('slug')->toArray();
-               
+
                 foreach ($formSlugs as $slug) {
 
                     $pluralSlug = Str::plural(strtolower($slug));
@@ -230,7 +230,6 @@ class BackupServices
             throw new ApiError('Failed to extract zip file.', 500);
         }
     }
-
     /**
      * Restores a database snapshot from the specified directory.
      *
@@ -255,51 +254,70 @@ class BackupServices
             // Load the JSON file content
             $jsonData = json_decode(file_get_contents($filePath), true);
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new \Exception('Database restore failed: Invalid JSON file');
+                throw new \Exception('Database restore failed: Invalid JSON format');
             }
 
             foreach ($jsonData as $table => $content) {
-                // Drop the table if it exists (optional)
-                if (!Schema::hasTable($table)) {
-
-                    if ($content["schema"] == 'page')
-                        PageSchema::up($table);
-                    else
-                        if ($content["schema"] == 'collection')
-                            CollectionSchema::up($table);
-                        else
-                            if ($content["schema"] == 'layout')
+                try {
+                    // Drop the table if it doesn't exist and create it based on the schema
+                    if (!Schema::hasTable($table)) {
+                        switch ($content['schema']) {
+                            case 'page':
+                                PageSchema::up($table);
+                                break;
+                            case 'collection':
+                                CollectionSchema::up($table);
+                                break;
+                            case 'layout':
                                 LayoutSchema::up($table);
-                            else
-                                if ($content["schema"] == 'component')
-                                    ComponentSchema::up($table);
-                                else
-                                    if ($content["schema"] == 'form')
-                                        FormSchema::up($table);
-                                    else
-                                        if ($content["schema"] == 'media')
-                                            MediaSchema::up($table);
-                                        else
-                                            if ($content["schema"] == 'document')
-                                                DocumentSchema::up($table);
-                                            else
-                                                continue;
-
-                }
-                // Insert or update rows
-                foreach ($content['data'] as $row) {
-                    $rowData = (array) $row;
-
-                    // Check if the row already exists (Assuming 'id' is the unique field)
-                    $existingRow = DB::table($table)->where('_id', $rowData['_id'])->first();
-
-                    if ($existingRow) {
-                        // Update the row if it exists
-                        DB::table($table)->where('_id', $rowData['_id'])->update($rowData);
-                    } else {
-                        // Insert the row if it doesn't exist
-                        DB::table($table)->insert($rowData);
+                                break;
+                            case 'component':
+                                ComponentSchema::up($table);
+                                break;
+                            case 'form':
+                                FormSchema::up($table);
+                                break;
+                            case 'media':
+                                MediaSchema::up($table);
+                                break;
+                            case 'document':
+                                DocumentSchema::up($table);
+                                break;
+                            default:
+                                \Log::warning("Schema type not recognized for table: $table");
+                                continue;
+                        }
                     }
+
+                    // Insert or update rows
+                    foreach ($content['data'] as $row) {
+                        $rowData = (array) $row;
+
+                        // Check if the row already exists (Assuming '_id' is the unique field)
+                        $existingRow = DB::table($table)->where('_id', $rowData['_id'])->first();
+
+                        if ($existingRow) {
+                            // Handle potential errors while updating rows
+                            try {
+                                DB::table($table)->where('_id', $rowData['_id'])->update($rowData);
+                            } catch (\Illuminate\Database\QueryException $e) {
+                                // Log full error message for debugging purposes
+                                \Log::error("Error updating row in table $table: " . $e->getMessage());
+
+                                // Limit the error message to 100 characters
+                                $shortMessage = substr($e->getMessage(), 0, 200);
+                                throw new \Exception($shortMessage ."...");
+                            }
+                        } else {
+                            // Insert the row if it doesn't exist
+                            DB::table($table)->insert($rowData);
+                        }
+                    }
+
+                } catch (\Exception $tableException) {
+                    // Log the specific error related to the table for debugging
+                    \Log::error("Failed to restore table: $table. Error: " . $tableException->getMessage());
+                    throw new \Exception("Failed to restore table: $table. Error: " . $tableException->getMessage());
                 }
             }
 
@@ -308,9 +326,16 @@ class BackupServices
             if (File::exists($destinationDir)) {
                 File::deleteDirectory($destinationDir);
             }
-            throw new ApiError($e->getMessage() ?: 'Database restore failed.', 500);
+
+            // Log the main error and throw ApiError with a shortened message
+            \Log::error('Database restore failed: ' . $e->getMessage());
+
+            // Return a shortened version of the message (first 100 characters)
+            throw new ApiError('Database restore failed. Error: ' . $e->getMessage(), 500);
         }
     }
+
+
 
 
 
