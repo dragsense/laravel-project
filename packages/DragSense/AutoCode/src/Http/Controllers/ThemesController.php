@@ -32,13 +32,12 @@ class ThemesController extends Controller
      */
     public function installTheme(StoreThemesRequest $request): JsonResponse
     {
-
         $destinationDir = $this->themesServices->installTheme($request->all());
         // Install the backup and return the response
         $theme = $this->backupServices->installBackup('', $destinationDir);
 
-        if (File::exists($destinationDir + ".zip")) {
-            File::delete($destinationDir + ".zip");
+        if (File::exists($destinationDir . ".zip")) {
+            File::delete($destinationDir . ".zip");
         }
 
 

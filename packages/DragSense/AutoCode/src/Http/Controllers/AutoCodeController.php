@@ -154,8 +154,8 @@ public function downloadProject(Request $request)
             " }";
 
         // Add CSS and JS files to the zip
-        $zip->addFromString('public/style.css', $rootCss . $fontCssString . $globalCss['css']);
-        $zip->addFromString('public/index.js', $jsCode['code']);
+        $zip->addFromString('public/autocode-custom-style.css', $rootCss . $fontCssString . $globalCss['css']);
+        $zip->addFromString('public/autocode-custom-index.js', $jsCode['code']);
 
 
         // Close the zip
@@ -225,7 +225,7 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
     <link rel=\"icon\" href=\"" . $fullhost . ($globalSetting['global']['images']['favicon']['src'] ?? '/images/default/favicon.ico') . "\">
     <meta http-equiv=\"Content-Language\" content=\"" . htmlspecialchars($globalSetting['global']['lang'] ?? 'en') . "\">
     
-    <link rel=\"stylesheet\" href=\"../public/style.css\">
+    <link rel=\"stylesheet\" href=\"../public/autocode-custom-style.css\">
     <link rel=\"stylesheet\" href=\"./styles/" . htmlspecialchars($page['name']) . ".css\">
     " . ($globalSetting['global']['scripts']['head'] ?? '') . "
  " . ($page['scripts']['head'] ?? '') . "
@@ -236,7 +236,7 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
 
     " . ($globalSetting['global']['scripts']['foot'] ?? '') . "
     " . ($page['scripts']['footer'] ?? '') . "
-    <script src=\"/../public/index.js\"></script>
+    <script src=\"../public/autocode-custom-index.js\"></script>
 </body>
 </html>";
 
@@ -248,7 +248,7 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
     public function writeFilesToFolder($zip,  $type, $pagesResults, $page, $html)
     {
     // Ensure 'styles' folder in zip exists (this is just a folder path in zip, not in the filesystem)
-    $cssFilePath = 'styles/' . $page['name'] . '.css';
+    $cssFilePath = $type . '/styles/' . $page['name'] . '.css';
     $htmlFilePath = $type . "/" . $page['name'] . '.html';
        
     // Add CSS file to the zip

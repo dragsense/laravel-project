@@ -285,7 +285,7 @@ class BackupServices
                                 break;
                             default:
                                 \Log::warning("Schema type not recognized for table: $table");
-                                continue;
+                                continue 2;
                         }
                     }
 

@@ -699,7 +699,10 @@ class ThemeServices
     public function saveCss(array $cssBody): array
     {
         $code = $cssBody['code'] ?? '';
+      
         $this->putFileContent($this->dataDir . '/customStyle.css', $code);
+        
+
         return ['status' => true];
     }
 

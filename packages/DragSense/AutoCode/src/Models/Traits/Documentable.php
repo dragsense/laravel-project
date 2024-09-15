@@ -107,16 +107,18 @@ trait Documentable
                             $document->populatedRelationships = $populatedRelationships;
                         }
 
-                        $populatedImage = $document->settingImage;
-                        $setting = $document['setting'];
-                        $setting['populatedImage'] = $populatedImage;
-                        $document['setting'] = $setting;
 
                     }
                 }
             }
 
-
+            foreach ($documents as &$document) {
+                $populatedImage = $document->settingImage ?? null;
+                $setting = $document['setting'] ?? [];
+                $setting['populatedImage'] = $populatedImage;
+                $document['setting'] = $setting;
+            }
+            
 
 
             return [
@@ -253,15 +255,17 @@ trait Documentable
                             $document->populatedRelationships = $populatedRelationships;
                         }
 
-                        $populatedImage = $document->settingImage;
-                        $setting = $document['setting'];
-                        $setting['populatedImage'] = $populatedImage;
-                        $document['setting'] = $setting;
-
                     }
                 }
             }
 
+            foreach ($documents as &$document) {
+                $populatedImage = $document->settingImage ?? null;
+                $setting = $document['setting'] ?? [];
+                $setting['populatedImage'] = $populatedImage;
+                $document['setting'] = $setting;
+            }
+            
 
             return [
                 'documents' => $documents,

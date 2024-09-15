@@ -242,6 +242,7 @@ class DocumentServices
         }
 
         $document->populatedImage = $document->populatedImages;
+      
         return $document;
     }
 
@@ -356,25 +357,34 @@ class DocumentServices
         $documents = is_array($results) && isset($results['documents'])
             ? collect($results['documents'])
             : collect([]);
-        // Transform data to include custom fields
-        $documents = $documents->map(function ($doc) use ($host) {
-            $statesObject = isset($doc->states) ? collect($doc->states)->mapWithKeys(function ($value, $key) {
-                return ["states.$key" => $value->defaultValue ?? ''];
-            })->toArray() : [];
 
-            return array_merge([
-                'name' => $doc->name ?? '',
-                'creator' => $doc->creator->name ?? null,
-                'createdAt' => $doc->createdAt
-            ], $statesObject, [
-                'setting.title' => $doc->setting->title ?? '',
-                'setting.desc' => $doc->setting->desc ?? '',
-                'setting.image' => isset($doc->setting->populatedImage) ? $host . $doc->setting->populatedImage->src : '',
-                'setting.content' => $doc->setting->content ?? '',
-                'setting.excerpt' => $doc->setting->excerpt ?? '',
-                'setting.status' => $doc->setting->status ?? '',
-            ]);
-        })->toArray();
+            Log::info('before', ["docs" => $documents]);
+
+            // Transform data to include custom fields
+            $documents = $documents->map(function ($doc) use ($host) {
+                // Handle states if they exist
+                $statesObject = isset($doc['states']) ? collect($doc['states'])->mapWithKeys(function ($value, $key) {
+                    return ["states.$key" => $value['defaultValue'] ?? ''];
+                })->toArray() : [];
+            
+                return array_merge([
+                    'name' => $doc['name'] ?? '',
+                  
+                ], $statesObject, [
+                    'setting.title' => isset($doc['setting']['title']) ? $doc['setting']['title'] : '', // Ensure setting exists
+                    'setting.desc' => isset($doc['setting']['desc'] ) ? $doc['setting']['desc'] : '',
+                    'setting.image' => isset($doc['setting']['populatedImage']) ? $host . $doc['setting']['populatedImage']['src'] : '',
+                    'setting.content' => isset($doc['setting']['content']) ? $doc['setting']['content'] : '',
+                    'setting.excerpt' => isset($doc['setting']['excerpt']) ? $doc['setting']['excerpt'] : '',
+                    'setting.status' => isset($doc['setting']['status']) ? $doc['setting']['status'] : '',
+                    'creator' => isset($doc['creator']['name']) ? $doc['creator']['name'] : null, // Use array access
+                    'createdAt' => $doc['created_at'] ?? null, // Use snake_case if that's how it's returned in the log
+                ],
+               
+            );
+            })->toArray();
+            
+            Log::info('after', ["docs" => $documents]);
 
         // Define the fields
         $fields = array_merge(['name'], $stateKeys, [
