@@ -3,10 +3,12 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Requests\DocumentRequests\StoreDocumentRequest;
+use File;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use DragSense\AutoCode\Services\DocumentServices;
 use DragSense\AutoCode\Services\SettingServices;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
@@ -117,6 +119,39 @@ class DocumentController extends Controller
         $documents = $this->documentServices->getDocuments($collectionId, $isForm, $filter, $options);
 
         return response()->json(['documents' => $documents]);
+    }
+
+    /**
+     * Controller method for downloading documents as an Excel file.
+     *
+     * @param Request $request
+     * @param string $collectionId
+     * @return StreamedResponse
+     */
+    public function downloadDocuments(Request $request, $collectionId)
+    {
+        $isForm = $request->query('form') === 'true'; // Check if it's a form
+        $filter = $request->only(['name', 'startDate', 'endDate', 'status']);
+        $options = $request->only(['sortBy', 'limit', 'page']);
+
+        $protocol = request()->getScheme() ?? 'http';
+        $host = request()->header('Host');
+        $fullhost = "{$protocol}://{$host}";
+
+        // Call the downloadDocuments service
+        $outputPath = $this->documentServices->downloadDocuments($collectionId, $isForm, $filter, $options, $fullhost);
+
+        // Set response headers for file download
+        return new StreamedResponse(function () use ($outputPath) {
+            $fileStream = File::get($outputPath);
+            echo $fileStream;
+
+            // Delete the file after it is successfully streamed to the client
+            File::delete($outputPath);
+        }, 200, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . basename($outputPath) . '"',
+        ]);
     }
 
     /**

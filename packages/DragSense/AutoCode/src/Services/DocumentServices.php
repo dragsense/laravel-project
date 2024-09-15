@@ -2,21 +2,31 @@
 
 namespace DragSense\AutoCode\Services;
 
+use DragSense\AutoCode\Exports\DocumentsExport;
 use DragSense\AutoCode\Models\Collection;
 use DragSense\AutoCode\Models\Form;
-use DragSense\AutoCode\Models\Media;
 use DragSense\AutoCode\Models\Document;
 use DragSense\AutoCode\Http\Exceptions\ApiError;
 use DragSense\AutoCode\Models\Schema\DocumentSchema;
 use DragSense\AutoCode\Utils\Utils;
 use Exception;
-use Illuminate\Database\Schema\Blueprint;
+use File;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Excel;
 use Schema;
 use Str;
 
 class DocumentServices
 {
+
+
+    protected $excel;
+
+    public function __construct(Excel $excel)
+    {
+        $this->excel = $excel; // Inject Excel service
+    }
+
     /**
      * Create a document
      *
@@ -114,7 +124,7 @@ class DocumentServices
             $documentBody['_states'] = $documentBody['states'];
         }
 
-     
+
 
         $document->update($documentData);
         return $document;
@@ -295,6 +305,108 @@ class DocumentServices
 
         $document->delete();
         return true;
+    }
+
+
+    /**
+     * Download documents as an Excel file with filtering.
+     *
+     * @param string $collectionId
+     * @param bool $isForm
+     * @param array $filter
+     * @param array $options
+     * @param string $host
+     * @return string Path to the exported Excel file
+     * @throws ApiError
+     */
+    public function downloadDocuments($collectionId, $isForm, $filter, $options, $host)
+    {
+        // Fetch collection or form
+        $collection = $isForm ? Form::find($collectionId) : Collection::find($collectionId);
+        if (!$collection) {
+            throw new ApiError(404, ($isForm ? 'Form' : 'Collection') . ' not found');
+        }
+
+        // Temporary directory
+        $tempDir = storage_path('app/private/temp');
+        if (!File::exists($tempDir)) {
+            File::makeDirectory($tempDir, 0755, true);
+        }
+
+        // Build model name dynamically based on the collection slug
+        $modelName = $collection->slug;
+
+        // Retrieve documents based on filter and options
+        $this->createTableIfNotExists($collection->slug);
+
+        try {
+            $documentModel = $this->getDocumentModel($modelName);
+
+        } catch (Exception $e) {
+            Log::warning($e->getMessage());
+            throw new ApiError($e->getMessage(), 404);
+        }
+
+        $results = $documentModel::filterAllDocuments([], [], $filter, $options, function ($slug) {
+            return $this->getDocumentModel($slug);
+        });
+
+        $stateKeys = $collection->states ? array_map(fn($key) => "states.$key", array_keys($collection->states)) : [];
+
+        $documents = is_array($results) && isset($results['documents'])
+            ? collect($results['documents'])
+            : collect([]);
+        // Transform data to include custom fields
+        $documents = $documents->map(function ($doc) use ($host) {
+            $statesObject = isset($doc->states) ? collect($doc->states)->mapWithKeys(function ($value, $key) {
+                return ["states.$key" => $value->defaultValue ?? ''];
+            })->toArray() : [];
+
+            return array_merge([
+                'name' => $doc->name ?? '',
+                'creator' => $doc->creator->name ?? null,
+                'createdAt' => $doc->createdAt
+            ], $statesObject, [
+                'setting.title' => $doc->setting->title ?? '',
+                'setting.desc' => $doc->setting->desc ?? '',
+                'setting.image' => isset($doc->setting->populatedImage) ? $host . $doc->setting->populatedImage->src : '',
+                'setting.content' => $doc->setting->content ?? '',
+                'setting.excerpt' => $doc->setting->excerpt ?? '',
+                'setting.status' => $doc->setting->status ?? '',
+            ]);
+        })->toArray();
+
+        // Define the fields
+        $fields = array_merge(['name'], $stateKeys, [
+            'setting.title',
+            'setting.desc',
+            'setting.image',
+            'setting.content',
+            'setting.excerpt',
+            'setting.status',
+            'creator',
+            'createdAt'
+        ]);
+
+        $export = new DocumentsExport(collect($documents), $fields, $collection->name . ' Entries', $results['total']);
+
+        $filename = uniqid() . '.xlsx';
+        // Define output path
+        // Define output path relative to storage/app
+        $outputPath = $tempDir . '/' . $filename;
+
+        // Store the export directly to the file system
+        try {
+            Log::info(''. $outputPath);
+            $this->excel->store($export, 'private/temp/'.$filename ); // Use injected instance
+        } catch (Exception $e) {
+            Log::error('Error exporting documents: ' . $e->getMessage());
+            throw new ApiError(500, 'Error exporting documents');
+        }
+
+        // Return the path to the exported file
+        return $outputPath;
+
     }
 
 

@@ -88,21 +88,21 @@ trait Documentable
 
                     $relatedDocuments = $documentModel::whereIn('_id', $docIds)
                         ->get(['name', 'url', 'created_at', 'creator', 'slug', '_id', 'states', 'setting']);
-    
+
                     $relatedDocsById = $relatedDocuments->keyBy('_id');
 
                     foreach ($documents as &$document) {
                         if (isset($document->relationships[$relatedId])) {
-                            $relatedDocIds = (array)$document->relationships[$relatedId];
+                            $relatedDocIds = (array) $document->relationships[$relatedId];
                             $populatedRelationships[$relatedId] = $relatedDocsById->only($relatedDocIds)->values();
-    
 
-                                foreach ($relatedDocuments as &$relatedDocument) {
-                                    $populatedImage = $relatedDocument->settingImage;
-                                    $setting = $relatedDocument['setting'];
-                                    $setting['populatedImage'] = $populatedImage;
-                                    $relatedDocument['setting'] =  $setting;
-                                }
+
+                            foreach ($relatedDocuments as &$relatedDocument) {
+                                $populatedImage = $relatedDocument->settingImage;
+                                $setting = $relatedDocument['setting'];
+                                $setting['populatedImage'] = $populatedImage;
+                                $relatedDocument['setting'] = $setting;
+                            }
 
                             $document->populatedRelationships = $populatedRelationships;
                         }
@@ -110,7 +110,7 @@ trait Documentable
                         $populatedImage = $document->settingImage;
                         $setting = $document['setting'];
                         $setting['populatedImage'] = $populatedImage;
-                        $document['setting'] =  $setting;
+                        $document['setting'] = $setting;
 
                     }
                 }
@@ -157,8 +157,25 @@ trait Documentable
 
 
 
-            foreach ($filter as $key => $value) {
-                $query->where($key, 'LIKE', '%' . $value . '%');
+            if (!empty($filter['name'])) {
+                // Search for the name using LIKE with case-insensitive matching
+                $search = '%' . $filter['name'] . '%';
+                $query->where('name', 'LIKE', $search);
+            }
+
+            $status = !empty($filter['status']) ? $filter['status'] : null;
+            if ($status) {
+                $query->where('status', $status);
+            }
+
+         
+            if (!empty($filter['startDate']) && !empty($filter['endDate'])) {
+                // Filter by the creation date range
+                $createdAt = [
+                    ['created_at', '>=', $filter['startDate']],
+                    ['created_at', '<=', $filter['endDate']]
+                ];
+                $query->whereBetween('created_at', [$filter['startDate'], $filter['endDate']]);
             }
 
             // Apply filter criteria
@@ -217,21 +234,21 @@ trait Documentable
 
                     $relatedDocuments = $documentModel::whereIn('_id', $docIds)
                         ->get(['name', 'url', 'created_at', 'creator', 'slug', '_id', 'states', 'setting']);
-    
+
                     $relatedDocsById = $relatedDocuments->keyBy('_id');
 
                     foreach ($documents as &$document) {
                         if (isset($document->relationships[$relatedId])) {
-                            $relatedDocIds = (array)$document->relationships[$relatedId];
+                            $relatedDocIds = (array) $document->relationships[$relatedId];
                             $populatedRelationships[$relatedId] = $relatedDocsById->only($relatedDocIds)->values();
-    
 
-                                foreach ($relatedDocuments as &$relatedDocument) {
-                                    $populatedImage = $relatedDocument->settingImage;
-                                    $setting = $relatedDocument['setting'];
-                                    $setting['populatedImage'] = $populatedImage;
-                                    $relatedDocument['setting'] =  $setting;
-                                }
+
+                            foreach ($relatedDocuments as &$relatedDocument) {
+                                $populatedImage = $relatedDocument->settingImage;
+                                $setting = $relatedDocument['setting'];
+                                $setting['populatedImage'] = $populatedImage;
+                                $relatedDocument['setting'] = $setting;
+                            }
 
                             $document->populatedRelationships = $populatedRelationships;
                         }
@@ -239,7 +256,7 @@ trait Documentable
                         $populatedImage = $document->settingImage;
                         $setting = $document['setting'];
                         $setting['populatedImage'] = $populatedImage;
-                        $document['setting'] =  $setting;
+                        $document['setting'] = $setting;
 
                     }
                 }

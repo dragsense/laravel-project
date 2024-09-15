@@ -17,7 +17,7 @@ class AutoCodeAPIAuth
         }
 
         // Throwing an unauthorized error if the API key is invalid
-        throw new ApiError('Please authenticate', Response::HTTP_UNAUTHORIZED,);
+        throw new ApiError('Please authenticate', Response::HTTP_UNAUTHORIZED);
 
     }
 }

@@ -3,7 +3,10 @@
 namespace DragSense\AutoCode\Http\Controllers;
 
 use DragSense\AutoCode\Http\Controllers\Controller;
+use DragSense\AutoCode\Http\Exceptions\ApiError;
 use DragSense\AutoCode\Models\Collection;
+use DragSense\AutoCode\Models\Component;
+use DragSense\AutoCode\Models\Form;
 use DragSense\AutoCode\Models\Page;
 use DragSense\AutoCode\Services\SettingServices;
 use DragSense\AutoCode\Services\ThemeServices;
@@ -14,6 +17,7 @@ use Illuminate\Http\Request;
 use Log;
 use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 use Symfony\Component\ExpressionLanguage\SyntaxError;
+use ZipArchive;
 
 class AutoCodeController extends Controller
 {
@@ -21,7 +25,7 @@ class AutoCodeController extends Controller
     protected $themeServices;
     private $expressionLanguage;
 
-    private  $pattern;
+    private $pattern;
 
     public function __construct(SettingServices $settingServices, ThemeServices $themeServices)
     {
@@ -31,6 +35,233 @@ class AutoCodeController extends Controller
         $this->expressionLanguage = new ExpressionLanguage();
         $this->pattern = '/\{\{[^}]*\}\}/';
     }
+
+
+   /**
+ *
+ * @param Request $request The incoming HTTP request.
+ * @throws \Exception if an error occurs during the process.
+ */
+public function downloadProject(Request $request)
+{
+    try {
+        // Destructure query parameters
+        $name = $request->query('name');              // Fetch 'name' query parameter
+        $isPage = $request->query('isPage');          // Fetch 'isPage' query parameter
+        $isComponent = $request->query('isComponent'); // Fetch 'isComponent' query parameter
+        $isForm = $request->query('isForm');          // Fetch 'isForm' query parameter
+        $isCollection = $request->query('isCollection'); // Fetch 'isCollection' query parameter
+        $projectId = $request->query('projectId');    // Fetch 'projectId' query parameter
+
+        
+// Log all query parameters
+
+
+        // Read the settings.json file
+        $settings = $this->settingServices->getSettings();
+        $fullhost = '../public';
+
+        $globalSetting = [
+            'global' => [
+                'webTitle' => $settings['webTitle'] ?? 'Default Title',
+                'tagLine' => $settings['tagLine'] ?? 'Default Tag Line',
+                'desc' => $settings['desc'] ?? 'Default Description',
+                'author' => $settings['author'] ?? 'Default Author',
+                'images' => $settings['images'] ?? [],
+            ],
+            'host' => $fullhost
+        ];
+
+        // Check if projectId is valid
+        if (!$projectId || $projectId !== $settings['_id']) {
+            throw new ApiError('Unauthorized', 401);
+        }
+
+        $this->tempDir = storage_path('app/private/temp');
+
+        if (!File::exists($this->tempDir)) {
+            try {
+                File::makeDirectory($this->tempDir, 0755, true);
+            } catch (\Exception $e) {
+                Log::error('Failed to create temp directory: ' . $e->getMessage());
+                throw new \Exception('Failed to create temp directory.', 500);
+            }
+        }
+        
+        // Create a new zip file
+        $zip = new ZipArchive();
+        $zipFileName = 'autocode-project.zip';
+        $zipFilePath = $this->tempDir."/".$zipFileName;
+
+        if (File::exists($zipFilePath)) {
+            File::delete($zipFilePath); // Remove the existing theme folder
+        }
+
+
+        if (!is_writable(dirname($zipFilePath))) {
+            throw new ApiError("Directory is not writable: " . dirname($zipFilePath), 500);
+        }
+
+        if ($zip->open($zipFilePath, ZipArchive::CREATE) !== true) {
+            throw new ApiError('Could not create zip file', 500);
+        }
+
+        // Create folders in the zip file
+        $zip->addEmptyDir('pages');
+        $zip->addEmptyDir('components');
+        $zip->addEmptyDir('forms');
+        $zip->addEmptyDir('collections');
+        $zip->addEmptyDir('public');
+
+        // Fetch colors, variables, fonts, and generate CSS & JS
+        $filter = [];
+        $options = ['limit' => 100];
+
+        $fonts = $this->themeServices->getFonts($filter, $options);
+        $fontCssString = implode('', array_map(function ($font) {
+            return $font['isGoogleFont'] ? $font['src'] : '';
+        }, $fonts['data']));
+
+        // Generate pages, components, forms, and collections based on query parameters
+        if ($isPage == 'true') {
+            $this->generateEntities(Page::class, $zip, 'pages', $globalSetting, $fontCssString, $fullhost);
+        }
+
+        if ($isComponent == 'true') {
+            $this->generateEntities(Component::class, $zip, 'components', $globalSetting, $fontCssString, $fullhost);
+        }
+
+        if ($isForm == 'true') {
+            $this->generateEntities(Form::class, $zip, 'forms', $globalSetting, $fontCssString, $fullhost);
+        }
+
+        if ($isCollection == 'true') {
+            $this->generateEntities(Collection::class, $zip, 'collections', $globalSetting, $fontCssString, $fullhost);
+        }
+
+        // Generate CSS and JS
+        $colors = $this->themeServices->getColors($filter, $options);
+        $variables = $this->themeServices->getVariables($filter, $options);
+
+        $globalCss = $this->themeServices->getCss();
+        $jsCode = $this->themeServices->getJs();
+
+        // Prepare CSS root variables and font styles
+        $rootCss = "html { " .
+            implode(' ', array_map(fn($font) => "{$font['variable']}: {$font['fontFamily']};", $fonts['data'])) .
+            implode(' ', array_map(fn($color) => "{$color['variable']}: {$color['color']};", $colors['data'])) .
+            implode(' ', array_map(fn($variable) => "{$variable['variable']}: {$variable['value']};", $variables['data'])) .
+            " }";
+
+        // Add CSS and JS files to the zip
+        $zip->addFromString('public/style.css', $rootCss . $fontCssString . $globalCss['css']);
+        $zip->addFromString('public/index.js', $jsCode['code']);
+
+
+        // Close the zip
+        $zip->close();
+
+        // Set headers and send the zip file
+        return response()->streamDownload(function () use ($zipFilePath) {
+            readfile($zipFilePath);
+
+            File::delete($zipFilePath);
+        }, $zipFileName, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"'
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error("Error in downloadProject: {$e->getMessage()}");
+        throw new ApiError('An error occurred during the download process.', 500);
+    }
+}
+
+
+
+public function generateEntities($Entity, $zip, $type, $setting, $fontCssString, $fullhost)
+{
+    // Fetch entities from the database
+    $entities = $Entity::select('name', '_id', 'type')->get();
+
+    // Call generatePages
+    $this->generatePages($entities, $zip,  $type, $setting, $fontCssString, $fullhost);
+}
+
+public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssString, $fullhost)
+{
+    foreach ($pages as $page) {
+        // Fetch page data
+        $pagesResults = $this->fetchPageData($page, $fullhost, null);
+
+        $html = '';
+        // Generate HTML content if the page has elements
+        if (isset($pagesResults['pages'][$page->_id])) {
+            $elements = $pagesResults['pages'][$page->_id]['elements'];
+            $pageSetting = $pagesResults['pages'][$page->_id]['pageSetting'];
+
+            // Generate HTML content based on page elements and settings
+            $html = $this->generateHTML(
+                $elements,
+                "0",
+                $pagesResults['pages'],
+                $pageSetting,
+                $globalSetting,
+                $fullhost
+            );
+        }
+
+        // Build the full HTML structure
+        $html = "<!DOCTYPE html>
+<html lang=\"" . htmlspecialchars($globalSetting['global']['lang'] ?? 'en') . "\">
+<head>
+    <title>" .
+            ($page['setting']['title'] ?? ($globalSetting['global']['webTitle'] ?? 'Page')) .
+            (!empty($globalSetting['global']['tagLine']) ? ' - ' . htmlspecialchars($globalSetting['global']['tagLine']) : '') .
+            "</title>
+    <meta name=\"description\" content=\"" . htmlspecialchars($page['setting']['desc'] ?? ($globalSetting['global']['desc'] ?? '')) . "\">
+    <meta name=\"author\" content=\"" . htmlspecialchars($globalSetting['global']['author']) . "\">
+    <meta name=\"keywords\" content=\"" . htmlspecialchars($globalSetting['global']['keywords'] ?? '') . "\">
+    <link rel=\"icon\" href=\"" . $fullhost . ($globalSetting['global']['images']['favicon']['src'] ?? '/images/default/favicon.ico') . "\">
+    <meta http-equiv=\"Content-Language\" content=\"" . htmlspecialchars($globalSetting['global']['lang'] ?? 'en') . "\">
+    
+    <link rel=\"stylesheet\" href=\"../public/style.css\">
+    <link rel=\"stylesheet\" href=\"./styles/" . htmlspecialchars($page['name']) . ".css\">
+    " . ($globalSetting['global']['scripts']['head'] ?? '') . "
+ " . ($page['scripts']['head'] ?? '') . "
+    " . ($fontCssString ?? '') . "
+</head>
+<body>
+    <div id=\"root\">" . $html . "</div>
+
+    " . ($globalSetting['global']['scripts']['foot'] ?? '') . "
+    " . ($page['scripts']['footer'] ?? '') . "
+    <script src=\"/../public/index.js\"></script>
+</body>
+</html>";
+
+        // Write CSS and HTML to files
+        $this->writeFilesToFolder($zip,  $type, $pagesResults, $page, $html);
+    }
+    }
+
+    public function writeFilesToFolder($zip,  $type, $pagesResults, $page, $html)
+    {
+    // Ensure 'styles' folder in zip exists (this is just a folder path in zip, not in the filesystem)
+    $cssFilePath = 'styles/' . $page['name'] . '.css';
+    $htmlFilePath = $type . "/" . $page['name'] . '.html';
+       
+    // Add CSS file to the zip
+    if (isset($pagesResults['css']) && is_array($pagesResults['css'])) {
+        $cssContent = implode(' ', $pagesResults['css']); // Join the CSS array into a single string
+        $zip->addFromString($cssFilePath, $cssContent); // Add the CSS content as a file in the zip
+    }
+
+    // Add HTML file to the zip
+    $zip->addFromString($htmlFilePath, $html); // Add the HTML content as a file in the zip
+    }
+
+   
 
     /**
      * Handles the page request based on the incoming URL slug. It fetches the appropriate page or collection
@@ -323,11 +554,11 @@ class AutoCodeController extends Controller
         $nodeValue = $this->withFallBackNodeValue($element, $element['nodeValue'] ?? '', $globalSetting['global'], $host);
 
         $nodeValue = isset($element['isStateActive']) && $element['isStateActive']
-        ? $this->replacePlaceholders($nodeValue, $states, $props, $pageSetting, $globalSetting, $mapValue, $mapIndex)
-        : $nodeValue;
+            ? $this->replacePlaceholders($nodeValue, $states, $props, $pageSetting, $globalSetting, $mapValue, $mapIndex)
+            : $nodeValue;
 
         $value = $this->getValue($state, $states, $props, $pageSetting, $globalSetting, $mapValue, $mapIndex, $nodeValue);
-        
+
         $html = "<{$tagName}";
 
         // Generate attributes
@@ -356,15 +587,17 @@ class AutoCodeController extends Controller
             $html .= ($tagName === 'img') ? " src=\"" . html_entity_decode($value['value'] ?? $value) . "\"" : " value=\"" . html_entity_decode($value['value'] ?? $value) . "\"";
         }
 
-        if (in_array($tagName, ['video']) && $value) {
-            $poster = $this->createPoster($value, $tagName, $host);
+        if (in_array($tagName, ['video', 'audio']) && $value) {
             // Adding poster for video
             if ($tagName === 'video') {
+                $poster = $this->createPoster($value, $tagName, $host);
+
                 $html .= " poster=\"" . html_entity_decode($poster['src']) . "\"";
             }
-        }
 
-        $html .= " controls";
+            $html .= " controls";
+        }
+        
 
         foreach ($attributes as $key => $attributeValue) {
             if ($attributeValue !== null) {
@@ -865,7 +1098,7 @@ class AutoCodeController extends Controller
     // Function to replace placeholders in the string with their corresponding values
     function replacePlaceholders(&$inputString, &$states, &$props, &$setting, &$globalSetting, &$mapValue, &$mapIndex)
     {
-       
+
 
         $resultString = $inputString;
         try {
@@ -909,5 +1142,8 @@ class AutoCodeController extends Controller
         // Implement fetching page data logic similar to Node.js
         return $this->settingServices->getPageData($page->_id, $page->type, $host, true, $remainingSlug);
     }
+
+
+
 
 }

@@ -19,6 +19,7 @@ class DocumentRoutes
 
             Route::post("/get/filtered", [DocumentController::class, "getFilteredDocuments"]);
             Route::put("/get/filtered", [DocumentController::class, "getAllFilteredDocuments"]);
+            Route::get("/get/download", [DocumentController::class, "downloadDocuments"]);
         });
     }
 }

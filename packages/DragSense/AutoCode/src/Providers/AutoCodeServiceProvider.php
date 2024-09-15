@@ -2,6 +2,7 @@
 
 namespace DragSense\AutoCode\Providers;
 
+use DragSense\AutoCode\Http\Controllers\AutoCodeController;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Route;
 use View;
@@ -26,6 +27,11 @@ class AutoCodeServiceProvider extends ServiceProvider
         Route::prefix($prefix)
             ->middleware('api') // Apply the default 'api' middleware group
             ->group(__DIR__ . '/../Routes/api.php');
+
+        Route::middleware('autocode.api.auth')->group(function () {
+            Route::get("/autocode-project/download", [AutoCodeController::class, "downloadProject"]);
+        });
+
     }
 
     public function register()
