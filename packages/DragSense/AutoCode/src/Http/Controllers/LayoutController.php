@@ -70,7 +70,10 @@ class LayoutController extends Controller
      */
     public function getCss($id): JsonResponse
     {
-        $css = $this->settingServices->getCss($id, 'layout');
+        $protocol = request()->getScheme() ?? 'http';
+        $host = request()->header('Host');
+        $fullhost = "{$protocol}://{$host}";
+        $css = $this->settingServices->getCss($id, 'layout', $fullhost);
         return response()->json($css);
     }
 

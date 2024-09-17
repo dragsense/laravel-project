@@ -77,7 +77,7 @@ class Utils
      * @param array $elements The array of elements.
      * @return string The generated CSS as a string.
      */
-    public static function generateElementsCss(array &$elements): string
+    public static function generateElementsCss(array &$elements, $host = ''): string
     {
         if (empty($elements)) {
             return ''; // Return early if no elements are provided.
@@ -90,7 +90,7 @@ class Utils
             $selectorText = $element['selectorText'] ?? '';
 
             if ($selectorText) {
-                $css .= self::generateElementCss($style, $selectorText);
+                $css .= self::generateElementCss($style, $selectorText, $host);
             }
         }
 
@@ -104,7 +104,7 @@ class Utils
      * @param string $selectorText The CSS selector.
      * @return string The generated CSS as a string.
      */
-    private static function generateElementCss(array &$style, string $selectorText): string
+    private static function generateElementCss(array &$style, string $selectorText, $host): string
     {
         $css = '';
 
@@ -115,7 +115,7 @@ class Utils
                 $css .= "@media $mediaQuery {\n";
             }
 
-            $css .= self::generateStyleCss($styles, $selectorText);
+            $css .= self::generateStyleCss($styles, $selectorText, $host);
 
             if ($mediaQuery !== 'normal') {
                 $css .= "}\n";
@@ -125,32 +125,38 @@ class Utils
         return $css;
     }
 
-    /**
-     * Generate CSS for a single style.
-     *
-     * @param array $styles The styles array.
-     * @param string $selectorText The CSS selector.
-     * @return string The generated CSS as a string.
-     */
-    private static function generateStyleCss(array &$styles, string $selectorText): string
+    private static function generateStyleCss(array &$styles, string $selectorText, $host = ''): string
     {
         $css = '';
-
+    
         foreach ($styles as $pseudoClass => $properties) {
             $propertyStrings = array_map(
-                fn($prop, $value) => "$prop: " . ($value['value'] ?? '') . (!empty($value['priority']) ? ' !important' : ''),
+                function ($prop, $value) use ($host) {
+                    $propertyValue = $value['value'] ?? '';
+    
+                    // Check if property is either 'background-image' or 'list-style-image'
+                    if (in_array($prop, ['background-image', 'list-style-image'])) {
+                        // Check if value is in 'url(/...' format, then prepend the host
+                        if (strpos($propertyValue, 'url(/') === 0) {
+                            $propertyValue = str_replace('url(/', 'url(' . $host . '/', $propertyValue);
+                        }
+                    }
+    
+                    // Return the property string with optional !important
+                    return "$prop: " . $propertyValue . (!empty($value['priority']) ? ' !important' : '');
+                },
                 array_keys($properties['properties'] ?? []),
                 $properties['properties'] ?? []
             );
-
+    
             $propertiesStr = implode('; ', $propertyStrings);
-
+    
             if (trim($propertiesStr)) {
                 $selector = $pseudoClass !== 'root' ? $selectorText . $pseudoClass : $selectorText;
                 $css .= "$selector {\n  $propertiesStr\n}\n\n";
             }
         }
-
+    
         return $css;
     }
 

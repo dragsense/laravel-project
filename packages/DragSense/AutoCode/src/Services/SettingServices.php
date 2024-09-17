@@ -944,7 +944,7 @@ class SettingServices
      * @return array
      * @throws ApiError
      */
-    public function getCss($id, $type)
+    public function getCss($id, $type, $host)
     {
         // Find the page by ID
         $page = null;
@@ -976,7 +976,7 @@ class SettingServices
 
             }
 
-            $style['css'] = $this->generateCssForStyles($doc['styles']);
+            $style['css'] = $this->generateCssForStyles($doc['styles'], $host);
 
             return $style;
 
@@ -996,10 +996,10 @@ class SettingServices
      * @param string $id
      * @return array
      */
-    private static function generateCssForStyles(array &$styles): array
+    private static function generateCssForStyles(array &$styles, $host = ''): array
     {
         $css = [];
-        $css[] = Utils::generateElementsCss($styles);
+        $css[] = Utils::generateElementsCss($styles, $host);
 
         return $css;
     }

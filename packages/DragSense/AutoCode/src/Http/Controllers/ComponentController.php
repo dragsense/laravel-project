@@ -184,7 +184,10 @@ class ComponentController extends Controller
      */
     public function getCss($id): JsonResponse
     {
-        $css = $this->settingServices->getCss($id, 'component');
+        $protocol = request()->getScheme() ?? 'http';
+        $host = request()->header('Host');
+        $fullhost = "{$protocol}://{$host}";
+        $css = $this->settingServices->getCss($id, 'component', $fullhost);
         return response()->json($css);
     }
 
