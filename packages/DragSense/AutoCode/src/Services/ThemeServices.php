@@ -738,12 +738,12 @@ class ThemeServices
      *
      * @return array Contains the combined CSS code.
      */
-    public function getCss(): array
+    public function getCss($host = ''): array
     {
         $css = $this->getFileContent($this->dataDir . '/customStyle.css');
 
         $styles = $this->getJsonContent('style.json');
-        $css .= Utils::generateElementsCss($styles);
+        $css .= Utils::generateElementsCss($styles, $host);
 
         $animations = $this->getJsonContent('animation.json');
         $css .= Utils::generateAnimations($animations);

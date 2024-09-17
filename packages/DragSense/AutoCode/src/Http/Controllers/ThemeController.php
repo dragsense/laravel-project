@@ -345,7 +345,10 @@ class ThemeController extends Controller
      */
     public function getCss()
     {
-        $result = $this->themeServices->getCss();
+        $protocol = request()->getScheme() ?? 'http';
+        $host = request()->header('Host');
+        $fullhost = "{$protocol}://{$host}";
+        $result = $this->themeServices->getCss($fullhost);
         return response()->json($result, Response::HTTP_OK);
     }
 
