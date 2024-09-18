@@ -19,6 +19,8 @@ class SettingServices
     protected $filePath;
     protected $documentServices;
     protected $collectionServices;
+
+
     public function __construct(DocumentServices $documentServices, CollectionServices $collectionServices)
     {
         $this->dataDir = storage_path('app/private/data');
@@ -33,7 +35,6 @@ class SettingServices
                 throw new \Exception('Failed to create data directory.', 500);
             }
         }
-
 
         // Check and create additional files if needed
         $files = ['setting.json'];
@@ -51,7 +52,6 @@ class SettingServices
 
         $this->documentServices = $documentServices;
         $this->collectionServices = $collectionServices;
-
     }
 
     /**
@@ -131,7 +131,7 @@ class SettingServices
 
         try {
 
-            $page->populatedImage = $page->populatedImages;
+           
 
             $pages = [];
 
@@ -173,6 +173,11 @@ class SettingServices
             $forms = $page->forms ?? [];
             $this->loadForms($forms, $pages, $style, $withCss);
 
+            if ($page->setting && isset($page->populatedImages[0])) {
+                $settings = $page->setting;
+                $settings['populatedImage'] = $page->populatedImages[0];
+                $page->setting = $settings;
+            }
 
 
             $mainPageData = [
@@ -400,6 +405,18 @@ class SettingServices
             // Save the updated page
             $page->save();
         }
+
+        if ($page->setting) {
+
+            if(isset($page->populatedImages[0])) {
+            $settings = $page->setting;
+            $settings['populatedImage'] = $page->populatedImages[0];
+            $page->setting = $settings;
+            }
+
+            $page->populatedRelationships = $page->relations;
+        }
+
 
         return $this->generateDocuments($page, $type, $host);
 
@@ -629,9 +646,13 @@ class SettingServices
 
             if ($collection) {
                 // Update collection settings with populated images and relationships
+
+                if(isset($collection->populatedImages[0])) {
                 $setting = $collection->setting;
-                $setting["populatedImage"] = $collection->populatedImages;
+                $setting["populatedImage"] = $collection->populatedImages[0];
                 $collection->setting = $setting;
+                }
+
                 $collection->populatedRelationships = $collection->relations;
 
                 // Prepare the document and push to stream

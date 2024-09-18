@@ -22,7 +22,7 @@
 </script>
 <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-<script src="/autocode/autocode-custom-index.js"></script>
+<script src="/autocode/autocode-custom-index.js?ver={{ $timestamp }}"></script>
 {!! $footerScripts !!}
 {!! $pageFooterScripts !!}
 @yield('other-scripts')

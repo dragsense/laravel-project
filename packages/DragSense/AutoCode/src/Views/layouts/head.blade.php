@@ -12,6 +12,8 @@
     $language = isset($settings['lang']) ? $settings['lang'] : '';
     $customScripts = isset($settings['scripts']['head']) ? $settings['scripts']['head'] : '';
     $pageHeadScripts = isset($pageScripts['head']) ? $pageScripts['head'] : '';
+
+   
 @endphp
 
 <title>{{ $pageTitle }}{{ $tagLine ? " - $tagLine" : '' }}</title>
@@ -20,7 +22,7 @@
 <meta name="keywords" content="{{ $keywords }}">
 <link rel="icon" href="{{ $faviconSrc }}" type="{{ $faviconType }}">
 <meta http-equiv="Content-Language" content="{{ $language }}">
-<link rel="stylesheet" type="text/css" href="/autocode/autocode-custom-style.css">
+<link rel="stylesheet" type="text/css" href="/autocode/autocode-custom-style.css?ver={{ $timestamp }}">
 
 {!! $fontCssString !!}
 {!! $customScripts !!}

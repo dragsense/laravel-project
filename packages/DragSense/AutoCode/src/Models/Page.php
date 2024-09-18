@@ -188,4 +188,12 @@ class Page extends Model
         $populatedImage = $this->image()->select('_id', 'name', 'src')->first();
         return $populatedImage ? [$populatedImage] : [];
     }
+
+    /**
+     * Get the relations attribute with additional details.
+     */
+    public function getRelationsAttribute()
+    {
+        return [];
+    }
 }

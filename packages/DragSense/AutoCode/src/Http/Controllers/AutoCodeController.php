@@ -310,7 +310,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
                 if (!$page) {
                     foreach ($slugParts as $i => $slugPart) {
                         $currentSlug = implode('/', array_slice($slugParts, 0, $i + 1));
-
                         $page = Collection::select($projection)
                             ->where('slug', $currentSlug)
                             ->where('setting->status', 'PUBLIC')
@@ -338,7 +337,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
             }
 
             // Prepare URLs
-
             $protocol = request()->getScheme() ?? 'http';
             $host = request()->header('Host');
             $fullhost = "{$protocol}://{$host}";
@@ -466,7 +464,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
      * Generates HTML based on the provided elements, page settings, global settings, and states.
      * The function recursively processes elements and their child nodes, applying conditions
      * and attributes, and handles special cases for tags like `img` and `input`.
-     *
      * @param array $elements The array of elements to generate HTML from.
      * @param string $nodeId The ID of the current node being processed.
      * @param array $pageResults The result set containing page elements and states.
@@ -518,7 +515,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
     /**
      * Renders a single HTML element, applying attributes, classes, and handling special cases
      * for certain tags. It also processes child nodes recursively.
-     *
      * @param array $element The element to be rendered.
      * @param array $elements The array of all elements for the page.
      * @param array $pageResults The result set containing page elements and states.
@@ -558,7 +554,8 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
             : $nodeValue;
 
         $value = $this->getValue($state, $states, $props, $pageSetting, $globalSetting, $mapValue, $mapIndex, $nodeValue);
-
+          
+        
         $html = "<{$tagName}";
 
         // Generate attributes
@@ -571,8 +568,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
             $mapValue,
             $mapIndex
         );
-
-
 
         // Handle dynamic and static classes
         $dynamicClasses = isset($element['classes']) ? $this->reduceClassNames($element['classes'], $states, $props, $pageSetting, $globalSetting, $mapValue, $mapIndex) : '';
@@ -591,17 +586,34 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
             // Adding poster for video
             if ($tagName === 'video') {
                 $poster = $this->createPoster($value, $tagName, $host);
-
                 $html .= " poster=\"" . html_entity_decode($poster['src']) . "\"";
             }
-
             $html .= " controls";
         }
         
-
+       
         foreach ($attributes as $key => $attributeValue) {
             if ($attributeValue !== null) {
-                $html .= " {$key}=\"" . html_entity_decode($attributeValue) . "\"";
+        
+                if (is_array($attributeValue)) {
+                    // If the key is 'style', handle it differently by converting array to CSS string
+                    if ($key === 'style') {
+                        $styleString = '';
+                        foreach ($attributeValue as $styleKey => $styleValue) {
+                            // Convert camelCase to kebab-case for CSS properties
+                            $styleKey = strtolower(preg_replace('/([a-z])([A-Z])/', '$1-$2', $styleKey));
+                            $styleString .= "{$styleKey}: {$styleValue}; ";
+                        }
+                        $html .= " style=\"" . rtrim($styleString) . "\"";
+                    } else {
+                        // For other attributes that are arrays, you may want to handle differently
+                        // Join the array values with a space (adjust this based on your requirements)
+                        $html .= " {$key}=\"" . implode(' ', $attributeValue) . "\"";
+                    }
+                } else {
+                    // Non-array attribute values
+                    $html .= " {$key}=\"" . html_entity_decode($attributeValue) . "\"";
+                }
             }
         }
 
@@ -609,7 +621,7 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
 
         // Add content inside the tag if it's not an img or input
         if (!in_array($tagName, haystack: ['img', 'input', 'video', 'audio']) && $value) {
-            $html .= '<span>' . html_entity_decode($value['value'] ?? $value) . '</span>';
+            $html .= '<span>' . html_entity_decode($value['label'] ?? $value) . '</span>';
         }
 
         if (in_array($tagName, ['video', 'audio']) && $value) {
@@ -619,7 +631,6 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
 
             // Adding sources for video/audio
             foreach ($sources as $source) {
-
                 $html .= "<source src=\"" . html_entity_decode($source['src']) . "\" type=\"" . html_entity_decode($source['type']) . "\" />";
             }
 
@@ -897,6 +908,10 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
             $mapValue,
             $mapIndex
         );
+
+        if($attribute['key'] === 'backgroundImage' || $attribute['key'] === 'background-image')
+            $attributeValue = `url($attributeValue)`;
+        
 
         return $cond ? $attributeValue : null;
     }
