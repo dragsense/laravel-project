@@ -357,10 +357,13 @@ class Utils
             case 'SETTING':
                 return self::getSettingValue($key, $setting, $host);
             case 'creator':
+               
                 $creator = $setting['creator'] ?? [];
+                $value = $creator[$key[1]] ?? '';
+
                 return [
-                    'value' => $creator['_id'] ?? '',
-                    'label' => $creator['name'] ?? 'Unknown',
+                    'value' => $key[1] !== 'email' ? $key[1] : $value,
+                    'label' => $value ?: 'Unknown',
                 ];
             case 'createdAt':
                 $createdAt = $setting['createdAt'] ?? null;
