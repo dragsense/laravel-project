@@ -114,7 +114,7 @@ class ComponentServices
         $component->states = $component->_states;
         $component->events = $component->_events;
         $component->collStates = $component->_collStates;
-
+       
         $component->published = true;
         $component->updater = $componentData['updater'] ?? null;
 
@@ -253,7 +253,7 @@ class ComponentServices
 
         $component->published = false;
         $component->_styles = $componentData['_styles'];
-
+        Log::info(request()->getContent());
         $component->update();
         return $component;
     }

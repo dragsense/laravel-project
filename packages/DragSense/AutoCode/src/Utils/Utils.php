@@ -141,7 +141,7 @@ class Utils
                             $propertyValue = str_replace('url(/', 'url(' . $host . '/', $propertyValue);
                         }
                     }
-    
+                  
                     // Return the property string with optional !important
                     return "$prop: " . $propertyValue . (!empty($value['priority']) ? ' !important' : '');
                 },
@@ -541,14 +541,10 @@ class Utils
             ];
         } elseif ($key[0] === "WINDOW") {
             // Simplified return for WINDOW type
-            if ($key[1] === 'width') {
-                return '[Window width]'; // Replace with actual value if available
-            } elseif ($key[1] === 'height') {
-                return '[Window height]'; // Replace with actual value if available
-            }
+            return '""';
         }
 
-        return null;
+        return '""';
     }
 
     /**

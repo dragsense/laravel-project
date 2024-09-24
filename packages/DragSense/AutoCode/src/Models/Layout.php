@@ -128,153 +128,155 @@ class Layout extends Model{
         unset($this->withTemplate);
     }
 
-     /**
-     * Sets up the layout with child elements and grid layout if using a template.
-     *
-     * @param string $styleUid The root element's unique style UID.
-     * @param string $withTemplate The template option.
-     * @return void
-     */
-    private function setupTemplate($styleUid, $withTemplate)
-    {
-        $elements = $this->elements;
-        $styles = $this->styles;
+    /**
+ * Sets up the layout with child elements and grid layout if using a template.
+ *
+ * @param string $styleUid The root element's unique style UID.
+ * @param string $withTemplate The template option.
+ * @return void
+ */
+private function setupTemplate($styleUid, $withTemplate)
+{
+    $elements = $this->elements;
+    $styles = $this->styles;
 
-        $includeLeft = $withTemplate !== 'noLeft' && $withTemplate !== 'noSides';
-        $includeRight = $withTemplate !== 'noRight' && $withTemplate !== 'noSides';
+    $includeLeft = $withTemplate !== 'noLeft' && $withTemplate !== 'noSides';
+    $includeRight = $withTemplate !== 'noRight' && $withTemplate !== 'noSides';
 
-        $elements[0]['childNodes'] = ['1']; // Always include Header
-        $nextElementId = 2;
+    $elements[0]['childNodes'] = ['1']; // Always include Header
+    $nextElementId = 2;
 
-        if ($includeLeft) {
-            $elements[0]['childNodes'][] = (string) $nextElementId; // Add Left Aside
-            $nextElementId++;
-        }
-
-        $elements[0]['childNodes'][] = (string) $nextElementId; // Add Main
-        $mainElementId = $nextElementId;
+    if ($includeLeft) {
+        $elements[0]['childNodes'][] = (string) $nextElementId; // Add Left Aside
         $nextElementId++;
+    }
 
-        if ($includeRight) {
-            $elements[0]['childNodes'][] = (string) $nextElementId; // Add Right Aside
-            $nextElementId++;
-        }
+    $elements[0]['childNodes'][] = (string) $nextElementId; // Add Main
+    $mainElementId = $nextElementId;
+    $nextElementId++;
 
-        $elements[0]['childNodes'][] = (string) $nextElementId; // Add Footer
+    if ($includeRight) {
+        $elements[0]['childNodes'][] = (string) $nextElementId; // Add Right Aside
+        $nextElementId++;
+    }
 
-        $childClassNames = [
-            1 => 'header',
-            $mainElementId => 'main',
-            $nextElementId => 'footer',
+    $elements[0]['childNodes'][] = (string) $nextElementId; // Add Footer
+
+    $childClassNames = [
+        1 => 'header',
+        $mainElementId => 'main',
+        $nextElementId => 'footer',
+    ];
+
+    $tagNames = [
+        1 => 'header',
+        $mainElementId => 'main',
+        $nextElementId => 'footer',
+    ];
+
+    $names = [
+        1 => 'Header',
+        $mainElementId => 'Main',
+        $nextElementId => 'Footer',
+    ];
+
+    if ($includeLeft) {
+        $childClassNames[2] = 'left-aside';
+        $tagNames[2] = 'aside';
+        $names[2] = 'Left Aside';
+    }
+
+    if ($includeRight) {
+        $childClassNames[$nextElementId - 1] = 'right-aside';
+        $tagNames[$nextElementId - 1] = 'aside';
+        $names[$nextElementId - 1] = 'Right Aside';
+    }
+
+    foreach ($elements[0]['childNodes'] as $i) {
+        $id = Str::random(7);
+        $childClassName = 'ac-element-' . $childClassNames[$i] . '-' . $id;
+
+        $elements[$i] = [
+            '_uid' => $i,
+            'tagName' => $tagNames[$i],
+            'type' => 'layout',
+            'className' => $childClassName,
+            'selector' => '.' . $childClassName,
+            'childNodes' => [],
+            'styleUid' => Str::random(7),
+            'name' => $names[$i],
+            'parent' => "0",
         ];
 
-        $tagNames = [
-            1 => 'header',
-            $mainElementId => 'main',
-            $nextElementId => 'footer',
-        ];
-
-        $names = [
-            1 => 'Header',
-            $mainElementId => 'Main',
-            $nextElementId => 'Footer',
-        ];
-
-        if ($includeLeft) {
-            $childClassNames[2] = 'left-aside';
-            $tagNames[2] = 'aside';
-            $names[2] = 'Left Aside';
-        }
-
-        if ($includeRight) {
-            $childClassNames[$nextElementId - 1] = 'right-aside';
-            $tagNames[$nextElementId - 1] = 'aside';
-            $names[$nextElementId - 1] = 'Right Aside';
-        }
-
-        foreach ($elements[0]['childNodes'] as $i) {
-            $id = Str::random(7);
-            $childClassName = 'ac-element-' . $childClassNames[$i] . '-' . $id;
-
-            $elements[$i] = [
-                '_uid' => $i,
-                'tagName' => $tagNames[$i],
-                'type' => 'layout',
-                'className' => $childClassName,
-                'selector' => '.' . $childClassName,
-                'childNodes' => [],
-                'styleUid' => Str::random(7),
-                'name' => $names[$i],
-            ];
-
-            $styles[$elements[$i]['styleUid']] = [
-                '_uid' => $elements[$i]['styleUid'],
-                'selectorText' => '.' . $childClassName,
-                'type' => $tagNames[$i],
-                'style' => [
-                    'normal' => [
-                        'root' => [
-                            'properties' => [
-                                'grid-area' => [
-                                    'value' => $childClassNames[$i],
-                                    'unit' => '',
-                                ],
+        $styles[$elements[$i]['styleUid']] = [
+            '_uid' => $elements[$i]['styleUid'],
+            'selectorText' => '.' . $childClassName,
+            'type' => $tagNames[$i],
+            'style' => [
+                'normal' => [
+                    'root' => [
+                        'properties' => [
+                            'grid-area' => [
+                                'value' => $childClassNames[$i],
+                                'unit' => '',
                             ],
                         ],
                     ],
                 ],
-            ];
-        }
-
-        $gridTemplateAreas = "
-            \"header header header\"
-            \"" . ($includeLeft ? 'left-aside' : 'main') . " main " . ($includeRight ? 'right-aside' : 'main') . "\"
-            \"footer footer footer\"
-        ";
-
-        $styles[$styleUid]['style'] = [
-            'normal' => [
-                'root' => [
-                    'properties' => [
-                        'display' => [
-                            'value' => 'grid',
-                            'unit' => '',
-                        ],
-                        'grid-template-areas' => [
-                            'value' => trim($gridTemplateAreas),
-                            'unit' => '',
-                        ],
-                        'grid-template-columns' => [
-                            'value' => $includeLeft && $includeRight ? '1fr 3fr 1fr' : ($includeLeft || $includeRight ? '1fr 3fr 1fr' : '1fr 2fr 1fr'),
-                            'unit' => '',
-                        ],
-                        'grid-template-rows' => [
-                            'value' => 'auto',
-                            'unit' => '',
-                        ],
-                    ],
-                ],
-            ],
-            '(min-width: 768px) and (orientation: landscape)' => [
-                'root' => [
-                    'properties' => [
-                        'grid-template-areas' => [
-                            'value' => trim($gridTemplateAreas),
-                            'unit' => '',
-                        ],
-                        'grid-template-columns' => [
-                            'value' => $includeLeft && $includeRight ? '1fr 3fr 1fr' : ($includeLeft || $includeRight ? '1fr 3fr 1fr' : '1fr 2fr 1fr'),
-                            'unit' => '',
-                        ],
-                    ],
-                ],
             ],
         ];
-
-        $this->elements = $elements;
-        $this->styles = $styles;
-        $this->main = (string) $mainElementId;
     }
+
+    $gridTemplateAreas = "
+        \"header header header\"
+        \"" . ($includeLeft ? 'left-aside' : 'main') . " main " . ($includeRight ? 'right-aside' : 'main') . "\"
+        \"footer footer footer\"
+    ";
+
+    $styles[$styleUid]['style'] = [
+        'normal' => [
+            'root' => [
+                'properties' => [
+                    'display' => [
+                        'value' => 'grid',
+                        'unit' => '',
+                    ],
+                    'grid-template-areas' => [
+                        'value' => trim($gridTemplateAreas),
+                        'unit' => '',
+                    ],
+                    'grid-template-columns' => [
+                        'value' => $includeLeft && $includeRight ? '1fr 3fr 1fr' : ($includeLeft || $includeRight ? '1fr 3fr 1fr' : '1fr 2fr 1fr'),
+                        'unit' => '',
+                    ],
+                    'grid-template-rows' => [
+                        'value' => 'auto',
+                        'unit' => '',
+                    ],
+                ],
+            ],
+        ],
+        '(max-width: 768px)' => [
+            'root' => [
+                'properties' => [
+                    'grid-template-areas' => [
+                        'value' => trim($gridTemplateAreas),
+                        'unit' => '',
+                    ],
+                    'grid-template-columns' => [
+                        'value' => $includeLeft && $includeRight ? '1fr 3fr 1fr' : ($includeLeft || $includeRight ? '1fr 3fr 1fr' : '1fr 2fr 1fr'),
+                        'unit' => '',
+                    ],
+                ],
+            ],
+        ],
+    ];
+
+    $this->elements = $elements;
+    $this->styles = $styles;
+    $this->main = (string) $mainElementId;
+}
+
 
 
 }

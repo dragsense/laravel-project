@@ -499,13 +499,10 @@ class SettingServices
 
 
         if (count($doc['styles']) > 0) {
-
             $jsonData = ['elements' => $doc['styles'], '_id' => $doc['_id']];
             yield $jsonData;
-
         }
 
-        yield [];
 
     }
 
@@ -551,9 +548,10 @@ class SettingServices
         $page->elements = $elements;
         $page->_elements = $elements;
     }
+
+
     /**
      * Recursively loads and streams the components and their dependencies.
-     *
      * @param array $components List of component IDs to load.
      * @param array $loaded List of already loaded components to avoid duplication.
      */
@@ -575,14 +573,15 @@ class SettingServices
                 // Recursively load attached collection and inner components
                 $collectionId = $doc['attached'] ?? null;
                 if ($collectionId) {
-                    $this->loadFullCollection($collectionId, $loaded);
+                    yield from $this->loadFullCollection($collectionId, $loaded);
                 }
-
+                
                 $innerComponents = $doc['components'] ?? [];
-                $this->loadFullComponents($innerComponents, $loaded);
+           
+                yield from $this->loadFullComponents($innerComponents, $loaded);
 
                 $innerForms = $doc['forms'] ?? [];
-                $this->loadFullComponents($innerForms, $loaded);
+                yield from $this->loadFullForms($innerForms, $loaded);
             }
         }
     }
@@ -608,7 +607,7 @@ class SettingServices
                 $loaded[$formId] = true;
                 // Recursively load inner components of the form
                 $innerComponents = $doc['components'] ?? [];
-                $this->loadFullComponents($innerComponents, $loaded);
+                yield from $this->loadFullComponents($innerComponents, $loaded);
             }
         }
     }
@@ -957,73 +956,147 @@ class SettingServices
     }
 
 
-    /**
-     * Get a page CSS
-     *
-     * @param string $id
-     * @param string $type
-     * @return array
-     * @throws ApiError
-     */
-    public function getCss($id, $type, $host)
-    {
-        // Find the page by ID
-        $page = null;
+/**
+ * Get a page CSS
+ *
+ * @param string $id
+ * @param string $type
+ * @param string $host
+ * @return array
+ * @throws ApiError
+ */
+public function getCss(string $id, string $type, string $host): array
+{
 
-        if ($type === 'page') {
-            $page = Page::find($id);
-        } elseif ($type === 'component') {
-            $page = Component::find($id);
-        } elseif ($type === 'collection') {
-            $page = Collection::find($id);
-        } elseif ($type === 'form') {
-            $page = Form::find($id);
-        } elseif ($type === 'layout') {
-            $page = Layout::find($id);
-        }
-
-        if (!$page) {
-            throw new ApiError('Page not found', 404);
-        }
-
-        try {
-            $style = ['css' => []];
-            $doc = [];
-
-            if (!$page->published) {
-                $doc['styles'] = (array) $page->_styles;
-            } else {
-                $doc['styles'] = (array) $page->styles;
-
-            }
-
-            $style['css'] = $this->generateCssForStyles($doc['styles'], $host);
-
-            return $style;
-
-
-        } catch (\Exception $e) {
-            // Log the error and rethrow it
-            \Log::error('An unexpected error occurred:', ['exception' => $e]);
-            throw new ApiError('An unexpected error occurred', 500);
-        }
+    // Find the page based on type
+    $page = $this->findPageByIdAndType($id, $type);
+    
+    if (!$page) {
+        throw new ApiError('Page not found', 404);
     }
 
+    try {
+        $style = ['css' => []];
+        $doc = $this->prepareDocument($page);
+        
+        // Use the appropriate styles
+        $doc['styles'] = !$page->published ? (array) $page->_styles : (array) $page->styles;
 
-    /**
-     * Generate CSS for the styles
-     *
-     * @param array $styles
-     * @param string $id
-     * @return array
-     */
-    private static function generateCssForStyles(array &$styles, $host = ''): array
-    {
-        $css = [];
-        $css[] = Utils::generateElementsCss($styles, $host);
+        // Generate CSS for the styles
+        $style['css'] = $this->generateCssForStyles($doc, $style['css'], $host);
 
-        return $css;
+        // Load CSS for forms and components recursively
+        $this->loadFormsCSS($doc['forms'] ?? [], $style, $host);
+        $this->loadComponentsCSS($doc['components'] ?? [], $style, $host);
+
+        return $style;
+
+    } catch (\Exception $e) {
+        \Log::error('An unexpected error occurred:', ['exception' => $e]);
+        throw new ApiError('An unexpected error occurred', 500);
     }
+}
+
+/**
+ * Load CSS for forms recursively.
+ *
+ * @param array $forms
+ * @param array $style
+ * @param string $host
+ * @return void
+ */
+private function loadFormsCSS(array $forms, array &$style, string $host): void
+{
+
+    foreach ($forms as $formId) {
+        $form = Form::select(['styles', 'components', '_id', '_components', '_styles', 'published'])->find($formId);
+        
+        if ($form) {
+            $doc = $this->prepareDocument($form);
+            $doc['styles'] = !$form->published ? (array) $form->_styles : (array) $form->styles;
+
+            $style['css'] = $this->generateCssForStyles($doc, $style['css'], $host);
+            $this->loadComponentsCSS($doc['components'] ?? [], $style, $host);
+        } else {
+            \Log::warning('Form not found', ['formId' => $formId]);
+        }
+    }
+}
+
+/**
+ * Load CSS for components recursively.
+ *
+ * @param array $components
+ * @param array $style
+ * @param string $host
+ * @return void
+ */
+private function loadComponentsCSS(array $components, array &$style, string $host): void
+{
+
+    foreach ($components as $componentId) {
+        $component = Component::select(['styles', 'components', '_id', '_components', '_styles', 'published'])->find($componentId);
+
+        if ($component) {
+            $doc = $this->prepareDocument($component);
+            $doc['styles'] = !$component->published ? (array) $component->_styles : (array) $component->styles;
+
+            $style['css'] = $this->generateCssForStyles($doc, $style['css'], $host);
+            $this->loadComponentsCSS($doc['components'] ?? [], $style, $host);
+            $this->loadFormsCSS($doc['forms'] ?? [], $style, $host);
+        } else {
+            \Log::warning('Component not found', ['componentId' => $componentId]);
+        }
+    }
+}
+
+/**
+ * Find the page based on type and ID
+ *
+ * @param string $id
+ * @param string $type
+ * @return mixed
+ */
+private function findPageByIdAndType(string $id, string $type)
+{
+
+    // Common fields for all types except 'form'
+    $commonFields = ['styles', 'components', '_id', '_components', '_styles', 'published'];
+
+    // If type is 'form', exclude the 'forms' field
+    $fields = ($type === 'form') ? $commonFields : array_merge($commonFields, ['forms', '_forms']);
+
+    // Determine the model based on type
+    $model = match ($type) {
+        'collection' => Collection::class,
+        'component'  => Component::class,
+        'form'       => Form::class,
+        'layout'     => Layout::class,
+        default      => Page::class,
+    };
+
+    // Fetch and return the model with the specified projection
+    $page = $model::select($fields)->find($id);
+    if (!$page) {
+        \Log::warning('No page found', ['id' => $id, 'type' => $type]);
+    }
+    
+    return $page;
+}
+
+/**
+ * Generate CSS for the styles
+ *
+ * @param array $doc
+ * @param array $css
+ * @param string $host
+ * @return array
+ */
+private function generateCssForStyles(array $doc, array $css, string $host): array
+{
+    $css[] = Utils::generateElementsCss($doc['styles'], $host);
+    return $css;
+}
 
     /**
      * Prepares a document representation of a collection.

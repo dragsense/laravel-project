@@ -215,6 +215,7 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
         $html = "<!DOCTYPE html>
 <html lang=\"" . htmlspecialchars($globalSetting['global']['lang'] ?? 'en') . "\">
 <head>
+    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">
     <title>" .
             ($page['setting']['title'] ?? ($globalSetting['global']['webTitle'] ?? 'Page')) .
             (!empty($globalSetting['global']['tagLine']) ? ' - ' . htmlspecialchars($globalSetting['global']['tagLine']) : '') .
@@ -682,15 +683,17 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
                 $pageId = $page['_id'];
                 $pageType = $page['pageType'];
 
-                $html .= $pageType === 'form'
-                    ? "<span data-name='form'><form action='" . config('autocode.prefix') . "/v1/forms/submit/{$pageId}' method='POST'>"
-                    : "<span data-name='component'>";
+                    if($pageType === 'form')
+                        $html .= "<form action='" . config('autocode.prefix') . "/v1/forms/submit/{$pageId}' method='POST'>";
+            
+            
             }
 
             $html .= $this->generateHTML($elements, $childNodeId, $pageResults, $pageSetting, $globalSetting, $host, $states, $props);
 
             if ($page) {
-                $html .= $pageType === 'form' ? '</form></span>' : '</span>';
+                if($pageType === 'form')
+                        $html .= "</form>";
             }
         }
 
@@ -1157,8 +1160,5 @@ public function generatePages($pages, $zip,  $type, $globalSetting, $fontCssStri
         // Implement fetching page data logic similar to Node.js
         return $this->settingServices->getPageData($page->_id, $page->type, $host, true, $remainingSlug);
     }
-
-
-
 
 }
